@@ -1,10 +1,16 @@
 /* eslint-disable react/prop-types */
 "use client";
+import { soundDesign } from "@/components/soundDesign";
 import { useEffect, useRef, useState } from "react";
+import useSound from "use-sound";
 
 const Timer = ({ duration, roundHistory, onTimerEnd }) => {
   const pathRef = useRef(null);
   const [timer, setTimer] = useState(duration);
+
+  const [playTimerStart] = useSound(
+    soundDesign.find((sound) => sound.id === "timerStart").url
+  );
 
   const formatTime = (time) => {
     const minutes = Math.floor(time / 60);
@@ -42,7 +48,9 @@ const Timer = ({ duration, roundHistory, onTimerEnd }) => {
     const interval = setInterval(() => {
       setTimer((prevTimer) => {
         const nextTimer = prevTimer - 1;
-        if (nextTimer <= 0) {
+        if (nextTimer === 3) {
+          playTimerStart();
+        } else if (nextTimer <= 0) {
           clearInterval(interval);
           onTimerEnd();
         }
@@ -51,7 +59,7 @@ const Timer = ({ duration, roundHistory, onTimerEnd }) => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [onTimerEnd]);
+  }, [onTimerEnd, playTimerStart]);
 
   const isFinal = timer <= 10;
   let timerTextClass = `${

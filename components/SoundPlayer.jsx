@@ -2,9 +2,8 @@
 import HistoryBar from "@/components/HistoryBar";
 import RulesVideo from "@/components/RulesVideo";
 import TimerStartVideo from "@/components/TimerStartVideo";
-import { Button } from "@/components/ui/button";
+import { soundDesign } from "@/components/soundDesign";
 import Timer from "@/components/ui/timer";
-import { AudioLines } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import io from "socket.io-client";
@@ -21,7 +20,7 @@ const SoundPlayer = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedPlaylist = JSON.parse(searchParams.get("playlist") || "[]");
-  const [playSound] = useSound(playlist[currentIndex]);
+  const [playSound, { stop: stopSound }] = useSound(playlist[currentIndex]);
   const [showRulesVideo, setShowRulesVideo] = useState(true);
   const [showBlendedVideo, setShowBlendedVideo] = useState(false);
   const [showTimerStartVideo, setShowTimerStartVideo] = useState(false);
@@ -30,6 +29,26 @@ const SoundPlayer = ({
   const [navigatedToScorePage, setNavigatedToScorePage] = useState(false);
   const [roundHistory, setRoundHistory] = useState(
     Array(selectedPlaylist.length).fill(0)
+  );
+
+  const [playTimerStart] = useSound(
+    soundDesign.find((sound) => sound.id === "timerStart").url
+  );
+  const [playAmbiance, { stop: stopAmbiance }] = useSound(
+    soundDesign.find((sound) => sound.id === "ambiance").url,
+    { loop: true }
+  );
+  const [playPass] = useSound(
+    soundDesign.find((sound) => sound.id === "pass").url
+  );
+  const [playCorrect] = useSound(
+    soundDesign.find((sound) => sound.id === "correct").url
+  );
+  const [playRules] = useSound(
+    soundDesign.find((sound) => sound.id === "rules").url
+  );
+  const [playWrong] = useSound(
+    soundDesign.find((sound) => sound.id === "wrong").url
   );
 
   const handleReplaySound = useCallback(() => {
@@ -108,25 +127,37 @@ const SoundPlayer = ({
     };
 
     const handleAdminMessage = (message) => {
-      if (message === "Display Rules") {
+      if (message === "Stop Sound") {
+        stopSound();
+      } else if (message === "Display Rules") {
+        playRules();
+        playAmbiance();
         setShowRulesVideo(true);
         setShowBlendedVideo(true);
         setShowTimerStartVideo(false);
       } else if (message === "Start Game") {
+        playTimerStart();
         setShowTimerStartVideo(true);
         setShowBlendedVideo(false);
         setTimeout(() => {
           setShowRulesVideo(false);
           setShowTimerStartVideo(false);
           setGameStarted(true);
+          stopAmbiance();
         }, 3000);
       } else if (message === "Correct") {
+        stopSound();
+        playCorrect();
         handleCorrect();
       } else if (message === "Wrong") {
+        playWrong();
         handleWrong();
       } else if (message === "Pass") {
+        stopSound();
+        playWrong();
         handlePass();
       } else if (message === "Replay") {
+        stopSound();
         handleReplaySound();
       }
     };
@@ -146,39 +177,33 @@ const SoundPlayer = ({
     navigateToScorePage,
     handleReplaySound,
     updateRoundHistory,
+    playRules,
+    playAmbiance,
+    playTimerStart,
+    stopAmbiance,
+    playCorrect,
+    playWrong,
+    stopSound,
   ]);
 
   return (
-    <div className="relative flex content-center justify-center">
+    <div className="flex content-center justify-center">
       {showRulesVideo && <RulesVideo showBlendedVideo={showBlendedVideo} />}
       {showTimerStartVideo && <TimerStartVideo />}
       {gameStarted && (
         <>
-          <div className="flex flex-col items-center justify-center min-h-screen">
-            <div className="flex flex-col items-center justify-center mb-4">
-              <Button
-                onClick={handleReplaySound}
-                variant="outline"
-                size="icon"
-                className="w-24 h-24"
-              >
-                <AudioLines className="w-12 h-12" />
-              </Button>
-              <p className="mt-2">Press Spacebar to replay the sound</p>
-            </div>
-            <p className="text-lg font-bold">
-              Sound {currentIndex + 1} of {playlist.length}
-            </p>
+          <div className="flex items-center justify-center min-h-screen">
+            <p className="font-bold text-8xl">{currentIndex + 1}</p>
           </div>
-          <Timer
-            duration={59}
-            roundHistory={roundHistory}
-            onTimerEnd={handleTimerEnd}
-          />
           <HistoryBar
             totalRounds={playlist.length}
             roundHistory={roundHistory}
             currentRoundId={currentIndex}
+          />
+          <Timer
+            duration={59}
+            roundHistory={roundHistory}
+            onTimerEnd={handleTimerEnd}
           />
         </>
       )}

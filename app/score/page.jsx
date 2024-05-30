@@ -13,13 +13,7 @@ const ScorePage = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
-      <h1 className="mb-6 text-3xl font-bold">Congratulations!</h1>
-      <p className="mb-4">You scored {score} out of 5.</p>
-      {score === 5 ? (
-        <p className="text-lg">You found all the images! Well done!</p>
-      ) : (
-        <p className="text-lg">Keep practicing to improve your score.</p>
-      )}
+      <h1 className="mb-6 text-3xl font-bold">You scored {score} out of 5!</h1>
       <Button onClick={handlePlayAgain} variant="default" className="mt-5">
         Play Again
       </Button>

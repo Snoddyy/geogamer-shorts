@@ -3,15 +3,37 @@ import RotatedHistoryBar from "@/components/RotatedHistoryBar";
 import RulesVideo from "@/components/RulesVideo";
 import TimerStartVideo from "@/components/TimerStartVideo";
 import Viewer360 from "@/components/Viewer360";
+import { soundDesign } from "@/components/soundDesign";
 import Timer from "@/components/ui/timer";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import io from "socket.io-client";
+import useSound from "use-sound";
 
 const ImagePlayer = () => {
   const searchParams = useSearchParams();
   const selectedPlaylist = JSON.parse(searchParams.get("playlist") || "[]");
   const router = useRouter();
+
+  const [playTimerStart] = useSound(
+    soundDesign.find((sound) => sound.id === "timerStart").url
+  );
+  const [playAmbiance, { stop: stopAmbiance }] = useSound(
+    soundDesign.find((sound) => sound.id === "ambiance").url,
+    { loop: true }
+  );
+  const [playPass] = useSound(
+    soundDesign.find((sound) => sound.id === "pass").url
+  );
+  const [playCorrect] = useSound(
+    soundDesign.find((sound) => sound.id === "correct").url
+  );
+  const [playRules] = useSound(
+    soundDesign.find((sound) => sound.id === "rules").url
+  );
+  const [playWrong] = useSound(
+    soundDesign.find((sound) => sound.id === "wrong").url
+  );
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [roundHistory, setRoundHistory] = useState(
@@ -106,25 +128,32 @@ const ImagePlayer = () => {
       console.log("Message received from server:", message);
       if (message === "Display Rules") {
         setShowRulesVideo(true);
+        playRules();
+        playAmbiance();
         setShowBlendedVideo(true);
         setShowTimerStartVideo(false);
       } else if (message === "Start Game") {
         setShowTimerStartVideo(true);
+        playTimerStart();
         setShowBlendedVideo(false);
         setTimeout(() => {
           setShowRulesVideo(false);
           setShowTimerStartVideo(false);
           setGameStarted(true);
           setExpectedIndex(currentIndex);
+          stopAmbiance();
         }, 3000);
       } else if (message === "Correct") {
         if (currentIndex === expectedIndex) {
+          playCorrect();
           updateRoundHistory();
           handleNextImage();
         }
       } else if (message === "Wrong") {
+        playWrong();
         console.log("Wrong");
       } else if (message === "Pass") {
+        playPass();
         handleNextImage();
       }
     };
@@ -138,7 +167,14 @@ const ImagePlayer = () => {
     currentIndex,
     expectedIndex,
     handleNextImage,
+    playAmbiance,
+    playCorrect,
+    playPass,
+    playRules,
+    playTimerStart,
+    playWrong,
     selectedPlaylist.length,
+    stopAmbiance,
     updateRoundHistory,
   ]);
 
