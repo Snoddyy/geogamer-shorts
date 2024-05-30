@@ -91,9 +91,19 @@ const ImagePlayer = () => {
   }, [destroyingViewer, roundHistory, selectedPlaylist.length]);
 
   useEffect(() => {
-    const socket = io("https://geogamer-shorts.onrender.com");
+    const socket = io("http://92.141.138.206:8080/");
+
+    socket.on("connect", () => {
+      console.log("Connected to Socket.IO server");
+    });
+
+    // Log when the client disconnects
+    socket.on("disconnect", () => {
+      console.log("Disconnected from Socket.IO server");
+    });
 
     const handleAdminMessage = (message) => {
+      console.log("Message received from server:", message);
       if (message === "Display Rules") {
         setShowRulesVideo(true);
         setShowBlendedVideo(true);
@@ -140,7 +150,7 @@ const ImagePlayer = () => {
         <>
           <Viewer360 imageUrl={selectedPlaylist[currentIndex]} />
           <Timer
-            duration={5}
+            duration={59}
             roundHistory={roundHistory}
             onTimerEnd={handleTimerEnd}
           />

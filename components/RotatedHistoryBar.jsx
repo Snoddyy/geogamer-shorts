@@ -4,7 +4,7 @@ import HistoryBar from "@/components/HistoryBar";
 
 const RotatedHistoryBar = ({ totalRounds, roundHistory, currentRoundId }) => {
   return (
-    <div className="absolute transform -rotate-90 left-96 top-1/2">
+    <div className="absolute transform -rotate-90 -left-48 top-1/2">
       <HistoryBar
         totalRounds={totalRounds}
         roundHistory={roundHistory}

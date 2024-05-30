@@ -52,7 +52,7 @@ const SoundPlayer = ({
   }, [played, playlist.length, handleSoundPlayed, navigatedToScorePage]);
 
   useEffect(() => {
-    const socket = io("https://geogamer-shorts.onrender.com");
+    const socket = io("http://92.141.138.206:8080/");
 
     const handleCorrect = () => {
       const nextIndex = currentIndex + 1;
