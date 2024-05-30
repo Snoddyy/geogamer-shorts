@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useCallback } from "react";
 import io from "socket.io-client";
 
-const socket = io("http://92.141.138.206:8080");
+const socket = io("https://geogamer-shorts.onrender.com");
 
 const AdminPage = () => {
   const sendMessage = useCallback((message) => {

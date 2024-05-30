@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import io from "socket.io-client";
 
-const socket = io("http://92.141.138.206:8080");
+const socket = io("https://geogamer-shorts.onrender.com");
 
 const AdminPage = () => {
   const [showGameControls, setShowGameControls] = useState(false);

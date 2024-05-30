@@ -91,7 +91,7 @@ const ImagePlayer = () => {
   }, [destroyingViewer, roundHistory, selectedPlaylist.length]);
 
   useEffect(() => {
-    const socket = io("http://92.141.138.206:8080");
+    const socket = io("https://geogamer-shorts.onrender.com");
 
     const handleAdminMessage = (message) => {
       if (message === "Display Rules") {

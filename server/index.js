@@ -8,7 +8,7 @@ const server = http.createServer(app);
 
 const io = socketIo(server, {
   cors: {
-    origin: "*",
+    origin: "https://geogamer-shorts.onrender.com", // Update with your Render address
     methods: ["GET", "POST"],
     credentials: true,
   },
