@@ -6,13 +6,10 @@ const cors = require("cors");
 const app = express();
 const server = http.createServer(app);
 
-const io = socketIo(server, {
-  cors: {
-    origin: "https://geogamer-shorts.onrender.com", // Update with your Render address
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
+// Enable CORS
+app.use(cors());
+
+const io = socketIo(server);
 
 io.on("connection", (socket) => {
   console.log("A client connected");
