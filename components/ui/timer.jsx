@@ -54,7 +54,9 @@ const Timer = ({ duration, roundHistory, onTimerEnd }) => {
   }, [onTimerEnd]);
 
   const isFinal = timer <= 10;
-  let timerTextClass = `${isFinal ? "animate-glowAndPulse" : ""}`;
+  let timerTextClass = `${
+    isFinal ? "animate-glowAndPulse" : "animate-glowAndPulseBasic"
+  }`;
   const timerTextStyle = {
     fontSize: timer <= 59 ? "52px" : undefined,
     fill: isFinal ? "#d2003c" : "white",
@@ -62,7 +64,7 @@ const Timer = ({ duration, roundHistory, onTimerEnd }) => {
   };
   return (
     <div className="absolute inset-0 z-10 flex justify-center pointer-events-none top-5">
-      <div className="relative w-32 h-32">
+      <div className="relative w-48 h-48">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 200 200"
@@ -195,6 +197,27 @@ const Timer = ({ duration, roundHistory, onTimerEnd }) => {
             }
           }
           .animate-glowAndPulse {
+            animation: glowAndPulse 2s infinite;
+          }
+          
+          @keyframes glowAndPulseBasic {
+            0% {
+              transform: scale(1);
+              transform-origin: center;
+              text-shadow: none;
+            }
+            50% {
+              transform: scale(1.1);
+              transform-origin: center;
+              text-shadow: 0 0 1px #d2003c, 0 0 2px #d2003c, 0 0 3px #d2003c, 0 0 4px #d2003c;
+            }
+            100% {
+              transform: scale(1);
+              transform-origin: center;
+              text-shadow: none;
+            }
+          }
+          .animate-glowAndPulseBasic {
             animation: glowAndPulse 2s infinite;
           }
         `}
