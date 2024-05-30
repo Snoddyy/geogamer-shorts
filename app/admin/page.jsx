@@ -47,6 +47,14 @@ const AdminPage = () => {
     sendMessage("Stop Sound");
   }, [sendMessage]);
 
+  const handleSetRulesLol = useCallback(() => {
+    sendMessage("lol");
+  }, [sendMessage]);
+
+  const handleSetRulesMusic = useCallback(() => {
+    sendMessage("music");
+  }, [sendMessage]);
+
   useEffect(() => {
     const handleKeydown = (event) => {
       switch (event.key) {
@@ -82,6 +90,20 @@ const AdminPage = () => {
           <div className="flex flex-col">
             <h1 className="pb-4 text-2xl font-bold text-center">Pre-Game</h1>
             <div className="flex items-center justify-start gap-4">
+              <Button
+                onClick={handleSetRulesLol}
+                className="w-48 h-24 px-4 py-2"
+                variant="default"
+              >
+                Set Rules LoL
+              </Button>
+              <Button
+                onClick={handleSetRulesMusic}
+                className="w-48 h-24 px-4 py-2"
+                variant="default"
+              >
+                Set Rules Music
+              </Button>
               <Button
                 onClick={handleDisplayRules}
                 className="w-48 h-24 px-4 py-2"

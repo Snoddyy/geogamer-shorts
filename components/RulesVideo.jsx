@@ -2,7 +2,7 @@
 "use client";
 import BlendedVideo from "./BlendedVideo";
 
-const RulesVideo = ({ showBlendedVideo }) => {
+const RulesVideo = ({ showBlendedVideo, videoUrl }) => {
   const videoSource =
     "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/loop_with_logo.webm";
 
@@ -16,10 +16,7 @@ const RulesVideo = ({ showBlendedVideo }) => {
         muted
       />
       {showBlendedVideo && (
-        <BlendedVideo
-          videoUrl="https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_pano.webm"
-          showVideo={showBlendedVideo}
-        />
+        <BlendedVideo videoUrl={videoUrl} showVideo={showBlendedVideo} />
       )}
     </div>
   );

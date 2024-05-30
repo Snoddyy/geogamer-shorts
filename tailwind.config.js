@@ -21,7 +21,7 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)", ...fontFamily.sans],
+        custom: ["BULL", "sans"],
       },
       colors: {
         border: "hsl(var(--border))",

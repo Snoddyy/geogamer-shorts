@@ -27,6 +27,9 @@ const SoundPlayer = ({
   const [gameStarted, setGameStarted] = useState(false);
   const [played, setPlayed] = useState(0);
   const [navigatedToScorePage, setNavigatedToScorePage] = useState(false);
+  const [videoUrl, setVideoUrl] = useState(
+    " https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_sounds.webm"
+  );
   const [roundHistory, setRoundHistory] = useState(
     Array(selectedPlaylist.length).fill(0)
   );
@@ -127,6 +130,18 @@ const SoundPlayer = ({
     };
 
     const handleAdminMessage = (message) => {
+      if (message === "lol") {
+        setVideoUrl(
+          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_lol.webm"
+        );
+        console.log(videoUrl);
+      }
+      if (message === "music") {
+        setVideoUrl(
+          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_sounds.webm"
+        );
+        console.log(videoUrl);
+      }
       if (message === "Stop Sound") {
         stopSound();
       } else if (message === "Display Rules") {
@@ -184,11 +199,14 @@ const SoundPlayer = ({
     playCorrect,
     playWrong,
     stopSound,
+    videoUrl,
   ]);
 
   return (
     <div className="flex content-center justify-center">
-      {showRulesVideo && <RulesVideo showBlendedVideo={showBlendedVideo} />}
+      {showRulesVideo && (
+        <RulesVideo showBlendedVideo={showBlendedVideo} videoUrl={videoUrl} />
+      )}
       {showTimerStartVideo && <TimerStartVideo />}
       {gameStarted && (
         <>

@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "BULL";
+  src: url("../fonts/BULL-HEAVY1.otf") format("opentype");
+}
+
 @layer base {
   :root {
     --background: 210 12% 16%;

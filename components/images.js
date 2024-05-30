@@ -23,7 +23,7 @@ export const images = [
     ],
   },
   {
-    id: 2,
+    id: 3,
     name: "WoW 2",
     images: [
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/wow/2/1.jpg",
@@ -34,7 +34,7 @@ export const images = [
     ],
   },
   {
-    id: 2,
+    id: 4,
     name: "WoW 3",
     images: [
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/wow/3/1.jpg",

@@ -17,7 +17,7 @@ export const soundDesign = [
   },
   {
     id: "rules",
-    url: "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/sound_design/type-in-med.mp3",
+    url: "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/sound_design/rules2.mp3",
   },
   {
     id: "wrong",

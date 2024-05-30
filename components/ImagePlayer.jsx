@@ -180,7 +180,12 @@ const ImagePlayer = () => {
 
   return (
     <div className="relative flex content-center justify-center">
-      {showRulesVideo && <RulesVideo showBlendedVideo={showBlendedVideo} />}
+      {showRulesVideo && (
+        <RulesVideo
+          showBlendedVideo={showBlendedVideo}
+          videoUrl="https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_wow.webm"
+        />
+      )}
       {showTimerStartVideo && <TimerStartVideo />}
       {gameStarted && selectedPlaylist.length > 0 && (
         <>
