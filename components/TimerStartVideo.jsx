@@ -12,7 +12,7 @@ const TimerStartVideo = () => {
   // }, [play]);
 
   return (
-    <div className="fixed z-50 flex items-center justify-center mix-blend-screen ">
+    <div className="fixed z-50 bottom-52 mix-blend-screen ">
       <video className="" src={videoSource} autoPlay muted />
     </div>
   );

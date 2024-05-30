@@ -1,9 +1,11 @@
 "use client";
+import HistoryBar from "@/components/HistoryBar";
 import RulesVideo from "@/components/RulesVideo";
 import TimerStartVideo from "@/components/TimerStartVideo";
 import { Button } from "@/components/ui/button";
+import Timer from "@/components/ui/timer";
 import { AudioLines } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import io from "socket.io-client";
 import useSound from "use-sound";
@@ -12,12 +14,13 @@ const SoundPlayer = ({
   playlist,
   onCorrect,
   onWrong,
-  roundHistory,
   currentIndex,
   setCurrentIndex,
   handleSoundPlayed,
 }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedPlaylist = JSON.parse(searchParams.get("playlist") || "[]");
   const [playSound] = useSound(playlist[currentIndex]);
   const [showRulesVideo, setShowRulesVideo] = useState(true);
   const [showBlendedVideo, setShowBlendedVideo] = useState(false);
@@ -25,6 +28,9 @@ const SoundPlayer = ({
   const [gameStarted, setGameStarted] = useState(false);
   const [played, setPlayed] = useState(0);
   const [navigatedToScorePage, setNavigatedToScorePage] = useState(false);
+  const [roundHistory, setRoundHistory] = useState(
+    Array(selectedPlaylist.length).fill(0)
+  );
 
   const handleReplaySound = useCallback(() => {
     playSound();
@@ -51,6 +57,24 @@ const SoundPlayer = ({
     }
   }, [played, playlist.length, handleSoundPlayed, navigatedToScorePage]);
 
+  const handleTimerEnd = () => {
+    const score = roundHistory.filter((value) => value === 1).length;
+    router.push(`/score?score=${score}`);
+  };
+
+  const updateRoundHistory = useCallback(() => {
+    setRoundHistory((prevHistory) => {
+      const newHistory = [...prevHistory];
+      if (newHistory[currentIndex] === 0) {
+        newHistory[currentIndex] = 1;
+        return newHistory;
+      } else {
+        console.warn("Sound at currentIndex has already been marked as found.");
+        return newHistory;
+      }
+    });
+  }, [currentIndex]);
+
   useEffect(() => {
     const socket = io("http://92.141.138.206:8080/");
 
@@ -60,6 +84,7 @@ const SoundPlayer = ({
         setCurrentIndex(nextIndex);
         onCorrect();
         handleSoundPlayed();
+        updateRoundHistory();
       } else {
         onCorrect();
         handleSoundPlayed();
@@ -120,6 +145,7 @@ const SoundPlayer = ({
     handleSoundPlayed,
     navigateToScorePage,
     handleReplaySound,
+    updateRoundHistory,
   ]);
 
   return (
@@ -127,22 +153,34 @@ const SoundPlayer = ({
       {showRulesVideo && <RulesVideo showBlendedVideo={showBlendedVideo} />}
       {showTimerStartVideo && <TimerStartVideo />}
       {gameStarted && (
-        <div className="flex flex-col items-center justify-center min-h-screen">
-          <div className="flex flex-col items-center justify-center mb-4">
-            <Button
-              onClick={handleReplaySound}
-              variant="outline"
-              size="icon"
-              className="w-24 h-24"
-            >
-              <AudioLines className="w-12 h-12" />
-            </Button>
-            <p className="mt-2">Press Spacebar to replay the sound</p>
+        <>
+          <div className="flex flex-col items-center justify-center min-h-screen">
+            <div className="flex flex-col items-center justify-center mb-4">
+              <Button
+                onClick={handleReplaySound}
+                variant="outline"
+                size="icon"
+                className="w-24 h-24"
+              >
+                <AudioLines className="w-12 h-12" />
+              </Button>
+              <p className="mt-2">Press Spacebar to replay the sound</p>
+            </div>
+            <p className="text-lg font-bold">
+              Sound {currentIndex + 1} of {playlist.length}
+            </p>
           </div>
-          <p className="text-lg font-bold">
-            Sound {currentIndex + 1} of {playlist.length}
-          </p>
-        </div>
+          <Timer
+            duration={59}
+            roundHistory={roundHistory}
+            onTimerEnd={handleTimerEnd}
+          />
+          <HistoryBar
+            totalRounds={playlist.length}
+            roundHistory={roundHistory}
+            currentRoundId={currentIndex}
+          />
+        </>
       )}
     </div>
   );

@@ -30,7 +30,6 @@ const Timer = ({ duration, roundHistory, onTimerEnd }) => {
       const progress = (timestamp - start) / (duration * 1000);
       const currentOffset = length * (1 - Math.min(progress, 1));
       path.style.strokeDashoffset = currentOffset.toString();
-      console.log("Timer :" & timestamp);
 
       if (progress < 1) {
         requestAnimationFrame(animate);

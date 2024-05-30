@@ -4,7 +4,7 @@ import BlendedVideo from "./BlendedVideo";
 
 const RulesVideo = ({ showBlendedVideo }) => {
   const videoSource =
-    "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/assets/video/main-loop.webm";
+    "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/loop_with_logo.webm";
 
   return (
     <div className="fixed flex items-center justify-center">
@@ -17,7 +17,7 @@ const RulesVideo = ({ showBlendedVideo }) => {
       />
       {showBlendedVideo && (
         <BlendedVideo
-          videoUrl="https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/assets/video/palier1.webm"
+          videoUrl="https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_pano.webm"
           showVideo={showBlendedVideo}
         />
       )}
