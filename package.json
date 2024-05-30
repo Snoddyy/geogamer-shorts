@@ -3,20 +3,38 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "next dev -p 8181",
+    "dev:backend": "node server/index.js",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 8181",
     "lint": "next lint"
   },
   "dependencies": {
+    "@photo-sphere-viewer/core": "^5.7.4",
+    "@radix-ui/react-slot": "^1.0.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "http": "^0.0.1-security",
+    "lucide-react": "^0.379.0",
+    "next": "14.2.3",
     "react": "^18",
     "react-dom": "^18",
-    "next": "14.2.3"
+    "sass": "^1.77.2",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
+    "tailwind-merge": "^2.3.0",
+    "tailwindcss-animate": "^1.0.7",
+    "three": "^0.164.1",
+    "use-sound": "^4.0.1"
   },
   "devDependencies": {
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
+    "concurrently": "^8.2.2",
     "eslint": "^8",
-    "eslint-config-next": "14.2.3"
+    "eslint-config-next": "14.2.3",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1"
   }
 }
