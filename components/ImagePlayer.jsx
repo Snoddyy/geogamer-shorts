@@ -113,7 +113,7 @@ const ImagePlayer = () => {
   }, [destroyingViewer, roundHistory, selectedPlaylist.length]);
 
   useEffect(() => {
-    const socket = io("http://92.141.138.206:8080/");
+    const socket = io("http://15.188.53.144:80/");
 
     socket.on("connect", () => {
       console.log("Connected to Socket.IO server");
@@ -179,7 +179,7 @@ const ImagePlayer = () => {
   ]);
 
   return (
-    <div className="relative flex content-center justify-center">
+    <div className="relative flex content-center justify-center cursor-custom-move">
       {showRulesVideo && (
         <RulesVideo
           showBlendedVideo={showBlendedVideo}

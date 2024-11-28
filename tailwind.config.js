@@ -23,6 +23,10 @@ module.exports = {
       fontFamily: {
         custom: ["BULL", "sans"],
       },
+      cursor: {
+        "custom-move":
+          "url(https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/assets/cursor/pano.cur), grab",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

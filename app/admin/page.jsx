@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import io from "socket.io-client";
 
-const socket = io("http://92.141.138.206:8080/");
+const socket = io("http://15.188.53.144:80/");
 
 const AdminPage = () => {
   const router = useRouter();

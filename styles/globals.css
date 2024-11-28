@@ -55,3 +55,8 @@
 .animate-glow {
   animation: glow 1s ease-in-out infinite alternate;
 }
+
+html {
+  cursor: url("https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/assets/cursor/pano.cur"),
+    auto;
+}
