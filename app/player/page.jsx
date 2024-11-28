@@ -2,9 +2,9 @@
 import ImagePlayer from "@/components/ImagePlayer";
 import SoundPlayer from "@/components/SoundPlayer";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
-const PlayerPage = () => {
+const PlayerContent = () => {
   const searchParams = useSearchParams();
   const selectedPlaylist = JSON.parse(searchParams.get("playlist") || "[]");
   const playlistType = searchParams.get("playlistType") || "image";
@@ -64,6 +64,14 @@ const PlayerPage = () => {
         />
       )}
     </div>
+  );
+};
+
+const PlayerPage = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PlayerContent />
+    </Suspense>
   );
 };
 

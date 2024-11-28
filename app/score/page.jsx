@@ -1,8 +1,9 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-const ScorePage = () => {
+const ScoreContent = () => {
   const searchParams = useSearchParams();
   const score = parseInt(searchParams.get("score") || "0", 10);
   const router = useRouter();
@@ -18,6 +19,14 @@ const ScorePage = () => {
         Play Again
       </Button>
     </div>
+  );
+};
+
+const ScorePage = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ScoreContent />
+    </Suspense>
   );
 };
 
