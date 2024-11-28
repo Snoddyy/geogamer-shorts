@@ -3,7 +3,7 @@ import io from "socket.io-client";
 
 const SocketComponent = () => {
   useEffect(() => {
-    const socket = io("http://92.141.138.206:8080");
+    const socket = io("http://15.188.53.144:80");
 
     socket.on("imageUpdated", (index) => {
       console.log("Received updated image index:", index);

@@ -98,7 +98,7 @@ const SoundPlayer = ({
   }, [currentIndex]);
 
   useEffect(() => {
-    const socket = io("http://92.141.138.206:8080/");
+    const socket = io("http://15.188.53.144:80/");
 
     const handleCorrect = () => {
       const nextIndex = currentIndex + 1;
