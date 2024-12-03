@@ -1,10 +1,13 @@
 "use client";
+import BackgroundVideo from "@/components/BackgroundVideo";
 import RotatedHistoryBar from "@/components/RotatedHistoryBar";
 import RulesVideo from "@/components/RulesVideo";
 import TimerStartVideo from "@/components/TimerStartVideo";
 import Viewer360 from "@/components/Viewer360";
+import { locations } from "@/components/locations";
 import { soundDesign } from "@/components/soundDesign";
 import Timer from "@/components/ui/timer";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import io from "socket.io-client";
@@ -14,6 +17,10 @@ const ImagePlayer = () => {
   const searchParams = useSearchParams();
   const selectedPlaylist = JSON.parse(searchParams.get("playlist") || "[]");
   const router = useRouter();
+
+  const [videoUrl, setVideoUrl] = useState(
+    "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_classic.webm.webm"
+  );
 
   const [playTimerStart] = useSound(
     soundDesign.find((sound) => sound.id === "timerStart").url
@@ -48,7 +55,7 @@ const ImagePlayer = () => {
 
   const handleTimerEnd = () => {
     const score = roundHistory.filter((value) => value === 1).length;
-    router.push(`/score?score=${score}`);
+    router.push(`/score?score=${score}&total=${selectedPlaylist.length}`);
   };
 
   const handleNextImage = useCallback(() => {
@@ -78,6 +85,7 @@ const ImagePlayer = () => {
         console.warn("Unexpected value in roundHistory array.");
         return newHistory;
       }
+      selectedPlaylist;
     });
   }, [expectedIndex, selectedPlaylist.length]);
 
@@ -85,7 +93,7 @@ const ImagePlayer = () => {
     const allImagesFound = roundHistory.every((value) => value === 1);
     if (allImagesFound) {
       const score = roundHistory.filter((value) => value === 1).length;
-      router.push(`/score?score=${score}`);
+      router.push(`/score?score=${score}&total=${selectedPlaylist.length}`);
     }
   }, [roundHistory, router]);
 
@@ -126,6 +134,32 @@ const ImagePlayer = () => {
 
     const handleAdminMessage = (message) => {
       console.log("Message received from server:", message);
+      if (message === "warcraft") {
+        setVideoUrl(
+          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_sons_wc_sc.webm"
+        );
+      }
+      if (message === "menus") {
+        setVideoUrl(
+          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_main_menu.webm"
+        );
+      }
+      if (message === "logos") {
+        setVideoUrl(
+          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_logos.webm"
+        );
+      }
+      if (message === "ecrans") {
+        setVideoUrl(
+          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_loading.webm"
+        );
+      }
+      if (message === "classic") {
+        setVideoUrl(
+          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_classic.webm"
+        );
+      }
+
       if (message === "Display Rules") {
         setShowRulesVideo(true);
         playRules();
@@ -178,20 +212,41 @@ const ImagePlayer = () => {
     updateRoundHistory,
   ]);
 
+  const isImagePanorama = useCallback((imageUrl) => {
+    return locations.some((location) =>
+      location.images.some((img) => img === imageUrl)
+    );
+  }, []);
+
   return (
-    <div className="relative flex content-center justify-center cursor-custom-move">
+    <div className="relative w-[1080px] h-[1080px] flex content-center justify-center cursor-custom-move">
+      <BackgroundVideo />
       {showRulesVideo && (
-        <RulesVideo
-          showBlendedVideo={showBlendedVideo}
-          videoUrl="https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_wow.webm"
-        />
+        <RulesVideo showBlendedVideo={showBlendedVideo} videoUrl={videoUrl} />
       )}
       {showTimerStartVideo && <TimerStartVideo />}
       {gameStarted && selectedPlaylist.length > 0 && (
         <>
-          <Viewer360 imageUrl={selectedPlaylist[currentIndex]} />
+          {isImagePanorama(selectedPlaylist[currentIndex]) ? (
+            <Viewer360
+              key={currentIndex}
+              imageUrl={selectedPlaylist[currentIndex]}
+            />
+          ) : (
+            <div className="relative w-[1080px] h-[1080px] mx-auto top-0">
+              <Image
+                key={currentIndex}
+                src={selectedPlaylist[currentIndex]}
+                alt="Game location"
+                fill
+                sizes="1000px"
+                className="object-contain"
+                priority
+              />
+            </div>
+          )}
           <Timer
-            duration={59}
+            duration={60}
             roundHistory={roundHistory}
             onTimerEnd={handleTimerEnd}
           />

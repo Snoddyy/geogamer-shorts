@@ -47,12 +47,24 @@ const AdminPage = () => {
     sendMessage("Stop Sound");
   }, [sendMessage]);
 
-  const handleSetRulesLol = useCallback(() => {
-    sendMessage("lol");
+  const handleSetRulesClassic = useCallback(() => {
+    sendMessage("classic");
   }, [sendMessage]);
 
-  const handleSetRulesMusic = useCallback(() => {
-    sendMessage("music");
+  const handleSetRulesWarcraft = useCallback(() => {
+    sendMessage("warcraft");
+  }, [sendMessage]);
+
+  const handleSetRulesMenus = useCallback(() => {
+    sendMessage("menus");
+  }, [sendMessage]);
+
+  const handleSetRulesLogos = useCallback(() => {
+    sendMessage("logos");
+  }, [sendMessage]);
+
+  const handleSetRulesEcrans = useCallback(() => {
+    sendMessage("ecrans");
   }, [sendMessage]);
 
   useEffect(() => {
@@ -88,85 +100,117 @@ const AdminPage = () => {
       <div className="flex flex-col space-y-12">
         <div className="flex items-center justify-center space-x-4">
           <div className="flex flex-col">
-            <h1 className="pb-4 text-2xl font-bold text-center">Pre-Game</h1>
-            <div className="flex items-center justify-start gap-4">
-              <Button
-                onClick={handleSetRulesLol}
-                className="w-48 h-24 px-4 py-2"
-                variant="default"
-              >
-                Set Rules LoL
-              </Button>
-              <Button
-                onClick={handleSetRulesMusic}
-                className="w-48 h-24 px-4 py-2"
-                variant="default"
-              >
-                Set Rules Music
-              </Button>
-              <Button
-                onClick={handleDisplayRules}
-                className="w-48 h-24 px-4 py-2"
-                variant="default"
-              >
-                Display Rules
-              </Button>
-              <Button
-                onClick={handleStartGame}
-                className="w-48 h-24 px-4 py-2"
-                variant="default"
-              >
-                Start Game
-              </Button>
+            <h1 className="pb-4 text-2xl text-center">Pre-Game</h1>
+            <div className="flex flex-col items-center justify-start gap-4">
+              <h2 className="text-1xl text-center">Type de la partie</h2>
+              <div className="flex items-center justify-start gap-4 ">
+                <Button
+                  onClick={handleSetRulesClassic}
+                  className="w-48 h-12 px-4 py-2"
+                  variant="default"
+                >
+                  Classic
+                </Button>
+                <Button
+                  onClick={handleSetRulesMenus}
+                  className="w-48 h-12 px-4 py-2"
+                  variant="default"
+                >
+                  Menus Principaux
+                </Button>
+                <Button
+                  onClick={handleSetRulesLogos}
+                  className="w-48 h-12 px-4 py-2"
+                  variant="default"
+                >
+                  Logos Fictifs
+                </Button>
+                <Button
+                  onClick={handleSetRulesEcrans}
+                  className="w-48 h-12 px-4 py-2"
+                  variant="default"
+                >
+                  Ecrans de chargement
+                </Button>
+                <Button
+                  onClick={handleSetRulesWarcraft}
+                  className="w-48 h-12 px-4 py-2"
+                  variant="default"
+                >
+                  Sons Warcraft
+                </Button>
+              </div>
+              <h2 className="text-1xl text-center">Démarage de la partie</h2>
+              <div className="flex items-center justify-start gap-4 ">
+                <Button
+                  onClick={handleDisplayRules}
+                  className="w-48 h-12 px-4 py-2"
+                  variant="default"
+                >
+                  Afficher Règles
+                </Button>
+                <Button
+                  onClick={handleStartGame}
+                  className="w-48 h-12 px-4 py-2"
+                  variant="default"
+                >
+                  Démarrer la partie
+                </Button>
+              </div>
             </div>
           </div>
         </div>
         <div className="flex flex-col pb-12">
-          <h1 className="pb-4 text-2xl font-bold text-center">Game Control</h1>
-          <div className="flex space-x-4">
-            <Button
-              onClick={handleCorrect}
-              variant="default"
-              className="w-48 h-24 px-4 py-2"
-            >
-              Correct (Keybind: Q)
-            </Button>
-            <Button
-              onClick={handleFalse}
-              variant="default"
-              className="w-48 h-24 px-4 py-2"
-            >
-              False (Keybind: S)
-            </Button>
-            <Button
-              onClick={handlePass}
-              variant="default"
-              className="w-48 h-24 px-4 py-2"
-            >
-              Pass (Keybind: D)
-            </Button>
-            <Button
-              onClick={handleReplay}
-              variant="default"
-              className="w-48 h-24 px-4 py-2"
-            >
-              Replay (Keybind: F)
-            </Button>
+          <h1 className="pb-4 text-2xl text-center">Contrôle de la partie</h1>
+          <div className="flex flex-col items-center justify-start gap-4">
+            <div className="flex items-center justify-start gap-4">
+              <Button
+                onClick={handleCorrect}
+                variant="default"
+                className="w-48 h-12 px-4 py-2"
+              >
+                Correct (Q)
+              </Button>
+              <Button
+                onClick={handleFalse}
+                variant="default"
+                className="w-48 h-12 px-4 py-2"
+              >
+                Faux (S)
+              </Button>
+              <Button
+                onClick={handlePass}
+                variant="default"
+                className="w-48 h-12 px-4 py-2"
+              >
+                Pass (D)
+              </Button>
+            </div>
+            <div className="flex items-center justify-start gap-4">
+              <Button
+                onClick={handleReplay}
+                variant="default"
+                className="w-48 h-12 px-4 py-2"
+              >
+                Jouer le son (F)
+              </Button>
+              <Button
+                onClick={handleStopSound}
+                className="self-center w-48 h-12 px-4 py-2"
+                variant="destructive"
+              >
+                Arrêter le son (G)
+              </Button>
+            </div>
           </div>
         </div>
-        <Button
-          onClick={handleStopSound}
-          className="self-center h-24 px-4 text-xl font-bold w-96"
-          variant="destructive"
-        >
-          Stop Sound (Keybind: G)
-        </Button>
+
         <Button
           onClick={handlePlayAgain}
-          className="self-center h-24 px-4 text-xl font-bold w-96"
+          className="self-center h-12 px-4 text-md w-56"
           variant="destructive"
         >
-          Mode Selection
+          Mode Sélection
         </Button>
       </div>
     </div>

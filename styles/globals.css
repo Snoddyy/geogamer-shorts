@@ -2,11 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* @font-face {
-  font-family: "BULL";
-  src: url("../fonts/BULL-HEAVY1.otf") format("opentype");
-} */
-
 @layer base {
   :root {
     --background: 210 12% 16%;
@@ -59,4 +54,72 @@
 html {
   cursor: url("https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/assets/cursor/pano.cur"),
     auto;
+}
+
+layer components {
+  .custom-btn-7 {
+    @apply relative overflow-hidden border-none;
+  }
+
+  .custom-btn-7::before,
+  .custom-btn-7::after,
+  .custom-btn-7 span::before,
+  .custom-btn-7 span::after {
+    @apply absolute content-[''] bg-gray-100 shadow-[0_0_5px_rgb(245,245,245)] transition-all duration-300;
+  }
+
+  .custom-btn-7::before {
+    @apply right-0 bottom-0 h-1/2 w-[2px];
+  }
+
+  .custom-btn-7::after {
+    @apply right-0 bottom-0 w-[20%] h-[2px];
+  }
+
+  .custom-btn-7:hover::before {
+    @apply h-full;
+  }
+
+  .custom-btn-7:hover::after {
+    @apply w-full;
+  }
+
+  .custom-btn-7 span::before {
+    @apply left-0 top-0 w-[2px] h-1/2;
+  }
+
+  .custom-btn-7 span::after {
+    @apply left-0 top-0 h-[2px] w-[20%];
+  }
+
+  .custom-btn-7:hover span::before {
+    @apply h-full;
+  }
+
+  .custom-btn-7:hover span::after {
+    @apply w-full;
+  }
+
+  .lighting-effect {
+    @apply absolute top-0 -left-full w-full h-full pointer-events-none;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(210, 0, 60, 0.3),
+      transparent
+    );
+    animation: lightingEffect 3s infinite;
+  }
+
+  @keyframes lightingEffect {
+    0% {
+      left: -100%;
+    }
+    50% {
+      left: 100%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
 }

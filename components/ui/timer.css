@@ -1,0 +1,33 @@
+.TimerContainer {
+  width: 100%;
+  position: absolute;
+  top: 20px;
+  left: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.TimerWrapper {
+  width: 200px;
+  height: 200px;
+  position: relative;
+}
+
+.TimerContent {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.TimerDisplay {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.TimerVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

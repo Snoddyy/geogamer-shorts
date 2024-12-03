@@ -36,9 +36,10 @@ const PlayerContent = () => {
     const allSoundsPlayed =
       playlistType === "sound" && soundsPlayed === selectedPlaylist.length;
     const allImagesFound = roundHistory.every((value) => value === 1);
+    console.log("length", selectedPlaylist.length);
     if (allSoundsPlayed || allImagesFound) {
       const score = roundHistory.filter((value) => value === 1).length;
-      router.push(`/score?score=${score}`);
+      router.push(`/score?score=${score}&total=${selectedPlaylist.length}`);
     }
   }, [
     roundHistory,
@@ -51,7 +52,12 @@ const PlayerContent = () => {
 
   return (
     <div className="relative flex content-center justify-center">
-      {playlistType === "image" && <ImagePlayer playlist={selectedPlaylist} />}
+      {(playlistType === "image" || playlistType === "panorama") && (
+        <ImagePlayer
+          playlist={selectedPlaylist}
+          isPanorama={playlistType === "panorama"}
+        />
+      )}
       {playlistType === "sound" && (
         <SoundPlayer
           playlist={selectedPlaylist}

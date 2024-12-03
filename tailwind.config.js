@@ -21,7 +21,7 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        custom: ["BULL", "sans"],
+        bull: ["Bull", "sans-serif"],
       },
       cursor: {
         "custom-move":

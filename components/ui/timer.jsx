@@ -3,13 +3,20 @@
 import { soundDesign } from "@/components/soundDesign";
 import { useEffect, useRef, useState } from "react";
 import useSound from "use-sound";
+import "./timer.css";
 
 const Timer = ({ duration, roundHistory, onTimerEnd }) => {
-  const pathRef = useRef(null);
   const [timer, setTimer] = useState(duration);
+  const videoRef = useRef(null);
 
   const [playTimerStart] = useSound(
     soundDesign.find((sound) => sound.id === "timerStart").url
+  );
+  const [playDeath] = useSound(
+    soundDesign.find((sound) => sound.id === "death").url
+  );
+  const [playWarning] = useSound(
+    soundDesign.find((sound) => sound.id === "warning").url
   );
 
   const formatTime = (time) => {
@@ -23,213 +30,51 @@ const Timer = ({ duration, roundHistory, onTimerEnd }) => {
   };
 
   useEffect(() => {
-    const path = pathRef.current;
-    if (!path) return;
-
-    const length = path.getTotalLength();
-    path.style.strokeDasharray = `${length}`;
-    path.style.strokeDashoffset = `${length}`;
-
-    let start = null;
-    const animate = (timestamp) => {
-      if (!start) start = timestamp;
-      const progress = (timestamp - start) / (duration * 1000);
-      const currentOffset = length * (1 - Math.min(progress, 1));
-      path.style.strokeDashoffset = currentOffset.toString();
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-    requestAnimationFrame(animate);
-  }, [duration]);
-
-  useEffect(() => {
     const interval = setInterval(() => {
       setTimer((prevTimer) => {
         const nextTimer = prevTimer - 1;
+        if (prevTimer === duration) {
+          videoRef.current?.play();
+        }
         if (nextTimer === 3) {
-          playTimerStart();
-        } else if (nextTimer <= 0) {
+          playWarning();
+        }
+        if (nextTimer <= 0) {
           clearInterval(interval);
           onTimerEnd();
         }
         return Math.max(0, nextTimer);
       });
-    }, 1000);
+    }, 990);
 
     return () => clearInterval(interval);
-  }, [onTimerEnd, playTimerStart]);
+  }, [onTimerEnd, playTimerStart, playWarning]);
 
-  const isFinal = timer <= 10;
-  let timerTextClass = `${
-    isFinal ? "animate-glowAndPulse" : "animate-glowAndPulseBasic"
-  }`;
-  const timerTextStyle = {
-    fontSize: timer <= 59 ? "52px" : undefined,
-    fill: isFinal ? "#d2003c" : "white",
-    fontWeight: 900,
-  };
+  useEffect(() => {
+    if (timer === 0) {
+      console.log("played death sound");
+      playDeath();
+    }
+  }, [timer, playDeath]);
+
   return (
-    <div className="absolute inset-0 z-10 flex justify-center pointer-events-none top-5">
-      <div className="relative w-48 h-48">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 200 200"
-          className="absolute base"
-        >
-          <path
-            d="M 100 0 L 200 100 L 100 200 L 0 100 Z"
-            style={{
-              stroke: "#FFFFFF",
-              strokeWidth: 6,
-              strokeLinecap: "square",
-              strokeLinejoin: "miter",
-              strokeMiterlimit: 4,
-              fill: "none",
-              fillRule: "nonzero",
-              opacity: 1,
-            }}
-            className="animated-path"
-          />
-        </svg>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 200 200"
-          className="absolute filter-red-glow"
-        >
-          <path
-            d="M 100 0 L 200 100 L 100 200 L 0 100 Z"
-            style={{
-              stroke: "#d2003c",
-              strokeWidth: 6,
-              strokeLinecap: "square",
-              strokeLinejoin: "miter",
-              strokeMiterlimit: 4,
-              fill: "none",
-              fillRule: "nonzero",
-              opacity: 1,
-            }}
-            className="animated-path"
-            ref={pathRef}
-          />
-          <defs>
-            <filter
-              id="red-glow"
-              filterUnits="userSpaceOnUse"
-              x="-50%"
-              y="-50%"
-              width="200%"
-              height="200%"
-            >
-              <feGaussianBlur
-                in="SourceGraphic"
-                stdDeviation="0.5"
-                result="blur0.5"
-              />
-              <feGaussianBlur
-                in="SourceGraphic"
-                stdDeviation="1"
-                result="blur1"
-              />
-              <feGaussianBlur
-                in="SourceGraphic"
-                stdDeviation="1.5"
-                result="blur1.5"
-              />
-              <feGaussianBlur
-                in="SourceGraphic"
-                stdDeviation="2"
-                result="blur2"
-              />
-              <feGaussianBlur
-                in="SourceGraphic"
-                stdDeviation="2.5"
-                result="blur2.5"
-              />
-
-              <feMerge result="blur-merged">
-                <feMergeNode in="blur1" />
-                <feMergeNode in="blur1.5" />
-                <feMergeNode in="blur2" />
-                <feMergeNode in="blur2.5" />
-              </feMerge>
-
-              <feColorMatrix
-                result="red-blur"
-                in="blur-merged"
-                type="matrix"
-                values="1 0 0 0 0
-                                 0 0.06 0 0 0
-                                 0 0 0.44 0 0
-                                 0 0 0 1 0"
-              />
-              <feMerge>
-                <feMergeNode in="red-blur" />
-
-                <feMergeNode in="blur0.5" />
-
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <text
-            x="50%"
-            y="50%"
-            textAnchor="middle"
-            alignmentBaseline="central"
-            className={`${timerTextClass}`}
-            style={timerTextStyle}
-          >
-            {formatTime(timer)}
-          </text>
-        </svg>
+    <div className="TimerContainer">
+      <div className="TimerWrapper">
+        <video
+          ref={videoRef}
+          src={`https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/assets/video/timer-squared${
+            duration === 90 ? "-90" : ""
+          }.webm`}
+          loop
+          muted
+          playsInline
+          style={{
+            width: "180px",
+            height: "180px",
+            objectFit: "cover",
+          }}
+        />
       </div>
-      <style>
-        {`
-          @keyframes glowAndPulse {
-            0% {
-              transform: scale(1);
-              transform-origin: center;
-              text-shadow: none;
-            }
-            50% {
-              transform: scale(1.1);
-              transform-origin: center;
-              text-shadow: 0 0 1px #d2003c, 0 0 2px #d2003c, 0 0 3px #d2003c, 0 0 4px #d2003c;
-            }
-            100% {
-              transform: scale(1);
-              transform-origin: center;
-              text-shadow: none;
-            }
-          }
-          .animate-glowAndPulse {
-            animation: glowAndPulse 2s infinite;
-          }
-          
-          @keyframes glowAndPulseBasic {
-            0% {
-              transform: scale(1);
-              transform-origin: center;
-              text-shadow: none;
-            }
-            50% {
-              transform: scale(1.1);
-              transform-origin: center;
-              text-shadow: 0 0 1px #d2003c, 0 0 2px #d2003c, 0 0 3px #d2003c, 0 0 4px #d2003c;
-            }
-            100% {
-              transform: scale(1);
-              transform-origin: center;
-              text-shadow: none;
-            }
-          }
-          .animate-glowAndPulseBasic {
-            animation: glowAndPulse 2s infinite;
-          }
-        `}
-      </style>
     </div>
   );
 };

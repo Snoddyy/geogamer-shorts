@@ -1,27 +1,33 @@
 const videos = [
   {
     key: 1,
-    name: "Sounds",
+    name: "warcraft",
     videoUrl:
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_sounds.webm",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_sons_wc_sc.webm",
   },
   {
     key: 2,
-    name: "World of Warcraft",
+    name: "menus",
     videoUrl:
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_wow.webm",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_main_menu.webm",
   },
   {
     key: 3,
-    name: "League of Legends",
+    name: "logos",
     videoUrl:
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_lol.webm",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_logos.webm",
   },
   {
     key: 4,
-    name: "Panorama",
+    name: "ecrans",
     videoUrl:
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_pano.webm",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_loading.webm",
+  },
+  {
+    key: 5,
+    name: "classic",
+    videoUrl:
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_classic.webm.webm",
   },
 ];
 

@@ -1,8 +1,8 @@
 "use client";
-import HistoryBar from "@/components/HistoryBar";
+import RotatedHistoryBar from "@/components/RotatedHistoryBar";
 import RulesVideo from "@/components/RulesVideo";
-import TimerStartVideo from "@/components/TimerStartVideo";
 import { soundDesign } from "@/components/soundDesign";
+import TimerStartVideo from "@/components/TimerStartVideo";
 import Timer from "@/components/ui/timer";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -28,7 +28,7 @@ const SoundPlayer = ({
   const [played, setPlayed] = useState(0);
   const [navigatedToScorePage, setNavigatedToScorePage] = useState(false);
   const [videoUrl, setVideoUrl] = useState(
-    " https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_sounds.webm"
+    "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_sons_wc_sc.webm"
   );
   const [roundHistory, setRoundHistory] = useState(
     Array(selectedPlaylist.length).fill(0)
@@ -81,7 +81,7 @@ const SoundPlayer = ({
 
   const handleTimerEnd = () => {
     const score = roundHistory.filter((value) => value === 1).length;
-    router.push(`/score?score=${score}`);
+    router.push(`/score?score=${score}&total=${selectedPlaylist.length}`);
   };
 
   const updateRoundHistory = useCallback(() => {
@@ -130,17 +130,15 @@ const SoundPlayer = ({
     };
 
     const handleAdminMessage = (message) => {
-      if (message === "lol") {
+      if (message === "warcraft") {
         setVideoUrl(
-          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_lol.webm"
+          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_sons_wc_sc.webm"
         );
-        console.log(videoUrl);
       }
       if (message === "music") {
         setVideoUrl(
-          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_sounds.webm"
+          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_sons_wc_sc.webm"
         );
-        console.log(videoUrl);
       }
       if (message === "Stop Sound") {
         stopSound();
@@ -203,7 +201,7 @@ const SoundPlayer = ({
   ]);
 
   return (
-    <div className="flex content-center justify-center">
+    <div className="relative w-[1080px] h-[1080px] flex content-center justify-center">
       {showRulesVideo && (
         <RulesVideo showBlendedVideo={showBlendedVideo} videoUrl={videoUrl} />
       )}
@@ -213,15 +211,16 @@ const SoundPlayer = ({
           <div className="flex items-center justify-center min-h-screen">
             <p className="font-bold text-8xl">{currentIndex + 1}</p>
           </div>
-          <HistoryBar
+          <Timer
+            duration={90}
+            roundHistory={roundHistory}
+            onTimerEnd={handleTimerEnd}
+          />
+          <RotatedHistoryBar
             totalRounds={playlist.length}
             roundHistory={roundHistory}
             currentRoundId={currentIndex}
-          />
-          <Timer
-            duration={59}
-            roundHistory={roundHistory}
-            onTimerEnd={handleTimerEnd}
+            className=""
           />
         </>
       )}

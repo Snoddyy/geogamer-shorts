@@ -4,7 +4,7 @@ import BlendedVideo from "./BlendedVideo";
 
 const RulesVideo = ({ showBlendedVideo, videoUrl }) => {
   const videoSource =
-    "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/loop_with_logo.webm";
+    "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_loop_logo2.webm";
 
   return (
     <div className="fixed flex items-center justify-center">

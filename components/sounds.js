@@ -2,7 +2,7 @@
 export const soundPlaylists = [
   {
     id: "sound-playlist-1",
-    name: "Music 1",
+    name: "Demo",
     sounds: [
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/1/1.mp3",
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/1/2.mp3",
@@ -13,79 +13,18 @@ export const soundPlaylists = [
   },
   {
     id: "sound-playlist-2",
-    name: "Music 2",
+    name: "Zerator",
     sounds: [
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/2/1.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/2/2.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/2/3.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/2/4.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/2/5.mp3",
-    ],
-  },
-  {
-    id: "sound-playlist-3",
-    name: "Music 3",
-    sounds: [
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/3/1.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/3/2.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/3/3.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/3/4.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/3/5.mp3",
-    ],
-  },
-  {
-    id: "sound-playlist-4",
-    name: "Music 4",
-    sounds: [
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/4/1.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/4/2.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/4/3.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/4/4.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/4/5.mp3",
-    ],
-  },
-  {
-    id: "sound-playlist-5",
-    name: "Music 5",
-    sounds: [
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/5/1.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/5/2.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/5/3.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/5/4.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/5/5.mp3",
-    ],
-  },
-  {
-    id: "sound-playlist-6",
-    name: "Targamas",
-    sounds: [
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/targamas/1.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/targamas/2.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/targamas/3.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/targamas/4.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/targamas/5.mp3",
-    ],
-  },
-  {
-    id: "sound-playlist-7",
-    name: "Upset",
-    sounds: [
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/upset/1.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/upset/2.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/upset/3.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/upset/4.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/upset/5.mp3",
-    ],
-  },
-  {
-    id: "sound-playlist-8",
-    name: "Vladi",
-    sounds: [
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/vladi/1.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/vladi/2.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/vladi/3.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/vladi/4.mp3",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/mai/vladi/5.mp3",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e06-e07-shorts/zerator-sound/1+-+Shorts+Sons+Zerator+-+Paysan+Humain+-+Travail+Termin%C3%A9+-+WC3.mp3",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e06-e07-shorts/zerator-sound/2+-+Shorts+Sons+Zerator+-+SCV+-+vos+ordres+capitaine+-+SCBW.mp3",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e06-e07-shorts/zerator-sound/3+-+Shorts+Sons+Zerator+-+Illidan+-+Un+traitre%2C+en+v%C3%A9rit%C3%A9+-+WC3.mp3",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e06-e07-shorts/zerator-sound/4+-+Shorts+Sons+Zerator+-+Chaman+-+Terre%2C+feu%2C+Temp%C3%AAte+-+WC3.mp3",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e06-e07-shorts/zerator-sound/5+-+Shorts+Sons+Zerator+-++Jim+Raynor+-+J'imagine+que+vous+ne+seriez+pas+-+SCBW.mp3",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e06-e07-shorts/zerator-sound/6+-+Shorts+Sons+Zerator+-+Reine+-+Sons+de+reine+zerg+-+SC2.mp3",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e06-e07-shorts/zerator-sound/7+-+Shorts+Sons+Zerator+-+Overmind+-+R%C3%A9veille-toi+mon+enfant+-+SCBW.mp3",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e06-e07-shorts/zerator-sound/8+-+Shorts+Sons+Zerator+-+Pandaren+Brewmaster+-+Je+le+mettrai+sur+votre+note+-+WC3.mp3",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e06-e07-shorts/zerator-sound/9+-+Shorts+Sons+Zerator+-+Archimonde+-+Tremblez+mortels+-+WC3.mp3",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e06-e07-shorts/zerator-sound/10+-+Shorts+Sons+Zerator+-Raszagal+-+je+te+demande+-+SCBW.mp3",
     ],
   },
 ];
