@@ -3,7 +3,7 @@ import "@/styles/viewer.scss";
 import { Viewer } from "@photo-sphere-viewer/core";
 import { useEffect, useRef } from "react";
 
-const Viewer360 = ({ imageUrl }) => {
+const Viewer360 = ({ imageUrl, defaultYaw, defaultFov }) => {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
 
@@ -16,28 +16,33 @@ const Viewer360 = ({ imageUrl }) => {
       container: containerRef.current,
       panorama: imageUrl,
       navbar: false,
+      defaultYaw: defaultYaw || 0,
+      defaultZoomLvl: defaultFov || 50,
     };
 
     try {
       if (!viewerRef.current) {
         viewerRef.current = new Viewer(options);
         console.log("Viewer initialized successfully");
+
+        return () => {
+          if (viewerRef.current) {
+            viewerRef.current.destroy();
+            viewerRef.current = null;
+            console.log("Viewer destroyed");
+          }
+        };
       } else {
         console.log("Updating panorama to:", imageUrl);
         viewerRef.current.setPanorama(imageUrl);
+        // Update position and zoom for existing viewer
+        viewerRef.current.setPosition({ yaw: defaultYaw || 0 });
+        viewerRef.current.setZoomLevel(defaultFov || 50);
       }
     } catch (error) {
       console.error("Error initializing viewer:", error);
     }
-
-    return () => {
-      if (viewerRef.current) {
-        viewerRef.current.destroy();
-        viewerRef.current = null;
-        console.log("Viewer destroyed");
-      }
-    };
-  }, [imageUrl]);
+  }, [imageUrl, defaultYaw, defaultFov]);
 
   useEffect(() => {
     console.log("Viewer imageUrl prop changed to:", imageUrl);

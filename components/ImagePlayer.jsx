@@ -9,18 +9,74 @@ import { soundDesign } from "@/components/soundDesign";
 import Timer from "@/components/ui/timer";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import io from "socket.io-client";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
+import { listenToCommands } from "@/utils/gameService";
 import useSound from "use-sound";
+import { images } from "@/components/images";
 
 const ImagePlayer = () => {
   const searchParams = useSearchParams();
   const selectedPlaylist = JSON.parse(searchParams.get("playlist") || "[]");
   const router = useRouter();
 
-  const [videoUrl, setVideoUrl] = useState(
-    "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_classic.webm.webm"
-  );
+  // Convert any string URLs in the playlist to their corresponding image objects
+  const processedPlaylist = useMemo(() => {
+    return selectedPlaylist.map((item) => {
+      // If item is already an object with url property, return it as is
+      if (typeof item === "object" && item.url) return item;
+
+      // If item is a string (URL), find the corresponding image object in locations
+      for (const location of locations) {
+        for (const img of location.images) {
+          if (typeof img === "object" && img.url === item) {
+            return img;
+          } else if (img === item) {
+            // For backward compatibility with any strings still in locations
+            return { url: item, yaw: 0, fov: 50 };
+          }
+        }
+      }
+
+      // If not found in locations, return a default object
+      return { url: item, yaw: 0, fov: 50 };
+    });
+  }, [selectedPlaylist]);
+
+  const initialVideoUrl = (() => {
+    if (selectedPlaylist.length > 0) {
+      // Get the first image URL (whether it's an object or string)
+      const firstImageUrl =
+        typeof selectedPlaylist[0] === "object"
+          ? selectedPlaylist[0].url
+          : selectedPlaylist[0];
+
+      // Try to find in locations first
+      const locationWithImage = locations.find((location) =>
+        location.images.some((img) =>
+          typeof img === "object"
+            ? img.url === firstImageUrl
+            : img === firstImageUrl
+        )
+      );
+
+      if (locationWithImage) {
+        return locationWithImage.videoUrl;
+      }
+
+      // Try to find in images collection
+      const imageSetWithImage = images.find((imageSet) =>
+        imageSet.images.includes(firstImageUrl)
+      );
+
+      if (imageSetWithImage) {
+        return imageSetWithImage.videoUrl;
+      }
+    }
+    // Fallback to classic rules video if no match found
+    return "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_classic.webm";
+  })();
+
+  const [videoUrl, setVideoUrl] = useState(initialVideoUrl);
 
   const [playTimerStart] = useSound(
     soundDesign.find((sound) => sound.id === "timerStart").url
@@ -53,9 +109,15 @@ const ImagePlayer = () => {
   const [destroyingViewer, setDestroyingViewer] = useState(false);
   const [expectedIndex, setExpectedIndex] = useState(0);
 
+  // Add timerKey state to force Timer to persist
+  const [timerKey] = useState("persistent-timer");
+
   const handleTimerEnd = () => {
-    const score = roundHistory.filter((value) => value === 1).length;
-    router.push(`/score?score=${score}&total=${selectedPlaylist.length}`);
+    // Only handle timer end if we're using a timer for this location
+    if (shouldShowTimer()) {
+      const score = roundHistory.filter((value) => value === 1).length;
+      router.push(`/score?score=${score}&total=${selectedPlaylist.length}`);
+    }
   };
 
   const handleNextImage = useCallback(() => {
@@ -121,43 +183,14 @@ const ImagePlayer = () => {
   }, [destroyingViewer, roundHistory, selectedPlaylist.length]);
 
   useEffect(() => {
-    const socket = io("http://15.188.53.144:80/");
-
-    socket.on("connect", () => {
-      console.log("Connected to Socket.IO server");
-    });
-
-    // Log when the client disconnects
-    socket.on("disconnect", () => {
-      console.log("Disconnected from Socket.IO server");
-    });
-
-    const handleAdminMessage = (message) => {
-      console.log("Message received from server:", message);
-      if (message === "warcraft") {
-        setVideoUrl(
-          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_sons_wc_sc.webm"
-        );
-      }
-      if (message === "menus") {
-        setVideoUrl(
-          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_main_menu.webm"
-        );
-      }
-      if (message === "logos") {
-        setVideoUrl(
-          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_logos.webm"
-        );
-      }
-      if (message === "ecrans") {
-        setVideoUrl(
-          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_loading.webm"
-        );
-      }
-      if (message === "classic") {
-        setVideoUrl(
-          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_classic.webm"
-        );
+    const unsubscribe = listenToCommands((message, ruleType) => {
+      if (ruleType) {
+        if (ruleType === "classic") {
+          setVideoUrl(
+            "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_classic.webm"
+          );
+        } else if (ruleType === "logos") {
+        }
       }
 
       if (message === "Display Rules") {
@@ -190,13 +223,9 @@ const ImagePlayer = () => {
         playPass();
         handleNextImage();
       }
-    };
+    });
 
-    socket.on("adminMessage", handleAdminMessage);
-    return () => {
-      socket.off("adminMessage", handleAdminMessage);
-      socket.disconnect();
-    };
+    return () => unsubscribe();
   }, [
     currentIndex,
     expectedIndex,
@@ -212,50 +241,121 @@ const ImagePlayer = () => {
     updateRoundHistory,
   ]);
 
-  const isImagePanorama = useCallback((imageUrl) => {
+  const isImagePanorama = useCallback((imageItem) => {
+    // Get the URL, whether imageItem is an object or string
+    const imageUrl =
+      typeof imageItem === "object" && imageItem.url
+        ? imageItem.url
+        : imageItem;
+
     return locations.some((location) =>
-      location.images.some((img) => img === imageUrl)
+      location.images.some((img) =>
+        typeof img === "object" ? img.url === imageUrl : img === imageUrl
+      )
     );
   }, []);
 
+  // Helper function to get image details
+  const getImageDetails = useCallback((imageUrl) => {
+    for (const location of locations) {
+      for (const img of location.images) {
+        if (typeof img === "object" && img.url === imageUrl) {
+          return img;
+        } else if (img === imageUrl) {
+          return { url: imageUrl };
+        }
+      }
+    }
+    return { url: imageUrl };
+  }, []);
+
+  // Add a helper function to determine if timer should be shown
+  const shouldShowTimer = useCallback(() => {
+    if (
+      selectedPlaylist.length === 0 ||
+      currentIndex >= selectedPlaylist.length
+    ) {
+      return false;
+    }
+
+    // Get the URL of the current image
+    const currentImage = processedPlaylist[currentIndex];
+    const currentImageUrl =
+      typeof currentImage === "object" && currentImage.url
+        ? currentImage.url
+        : currentImage;
+
+    // Check if this image belongs to Stanley (id: 4) or DS3-ER (id: 3)
+    for (const location of locations) {
+      if (location.id === 3 || location.id === 4) {
+        // DS3-ER or Stanley
+        const isFromTimerlessLocation = location.images.some((img) =>
+          typeof img === "object"
+            ? img.url === currentImageUrl
+            : img === currentImageUrl
+        );
+
+        if (isFromTimerlessLocation) {
+          return false; // Don't show timer for Stanley or DS3-ER
+        }
+      }
+    }
+
+    return true; // Show timer for all other locations
+  }, [currentIndex, processedPlaylist, selectedPlaylist.length]);
+
   return (
-    <div className="relative w-[1080px] h-[1080px] flex content-center justify-center cursor-custom-move">
-      <BackgroundVideo />
+    <div className="relative flex content-center justify-center cursor-custom-move">
       {showRulesVideo && (
         <RulesVideo showBlendedVideo={showBlendedVideo} videoUrl={videoUrl} />
       )}
       {showTimerStartVideo && <TimerStartVideo />}
-      {gameStarted && selectedPlaylist.length > 0 && (
+
+      {gameStarted && (
         <>
-          {isImagePanorama(selectedPlaylist[currentIndex]) ? (
+          {isImagePanorama(processedPlaylist[currentIndex]) ? (
             <Viewer360
-              key={currentIndex}
-              imageUrl={selectedPlaylist[currentIndex]}
+              key={`panorama-${currentIndex}`}
+              imageUrl={processedPlaylist[currentIndex].url}
+              initialYaw={processedPlaylist[currentIndex].yaw}
+              initialFov={processedPlaylist[currentIndex].fov}
             />
           ) : (
-            <div className="relative w-[1080px] h-[1080px] mx-auto top-0">
+            <div className="relative w-full h-screen">
+              <BackgroundVideo />
               <Image
-                key={currentIndex}
-                src={selectedPlaylist[currentIndex]}
+                key={`image-${currentIndex}`}
+                src={
+                  typeof processedPlaylist[currentIndex] === "object"
+                    ? processedPlaylist[currentIndex].url
+                    : processedPlaylist[currentIndex]
+                }
                 alt="Game location"
                 fill
-                sizes="1000px"
                 className="object-contain"
                 priority
               />
             </div>
           )}
-          <Timer
-            duration={60}
-            roundHistory={roundHistory}
-            onTimerEnd={handleTimerEnd}
-          />
-          <RotatedHistoryBar
-            totalRounds={selectedPlaylist.length}
-            roundHistory={roundHistory}
-            currentRoundId={currentIndex}
-          />
         </>
+      )}
+
+      {/* Conditionally render the Timer based on the location */}
+      {gameStarted && shouldShowTimer() && (
+        <Timer
+          key={timerKey}
+          duration={60}
+          roundHistory={roundHistory}
+          onTimerEnd={handleTimerEnd}
+        />
+      )}
+
+      {gameStarted && (
+        <RotatedHistoryBar
+          totalRounds={selectedPlaylist.length}
+          roundHistory={roundHistory}
+          currentRoundId={currentIndex}
+        />
       )}
     </div>
   );

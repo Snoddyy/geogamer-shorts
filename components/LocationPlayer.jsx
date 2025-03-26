@@ -9,7 +9,7 @@ import Timer from "@/components/ui/timer";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import io from "socket.io-client";
+import { listenToCommands } from "@/utils/gameService";
 import useSound from "use-sound";
 
 const LocationPlayer = () => {
@@ -27,6 +27,12 @@ const LocationPlayer = () => {
   const timerRef = useRef(null);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Find the associated location and its video URL
+  const [videoUrlForRules, setVideoUrlForRules] = useState("");
+
+  // Use a stable timerKey that won't change during navigation
+  const [timerKey] = useState("persistent-location-timer");
 
   // Define handleNextImage before using it in useEffect
   const handleNextImage = useCallback(() => {
@@ -49,12 +55,13 @@ const LocationPlayer = () => {
 
   const handleTimerEnd = useCallback(() => {
     console.log("Timer ended callback");
-    if (gameStarted && isTimerActive) {
+    // Only handle timer end if we're using a timer for this location
+    if (shouldShowTimer()) {
       const score = roundHistory.filter((value) => value === 1).length;
       console.log("Game over, score:", score);
       router.push(`/score?score=${score}&total=${selectedPlaylist.length}`);
     }
-  }, [gameStarted, isTimerActive, roundHistory, router]);
+  }, [roundHistory, router, selectedPlaylist.length, shouldShowTimer]);
 
   // Sound hooks
   const [playRules] = useSound(
@@ -79,44 +86,15 @@ const LocationPlayer = () => {
 
   // Initialize playlist and round history
   useEffect(() => {
-    const playlistParam = searchParams.get("playlist");
-    console.log("LocationPlayer - Raw playlist param:", playlistParam);
-
-    if (!playlistParam) {
-      console.log("No playlist parameter found");
-      router.replace("/playlist-selection");
-      return;
-    }
-
-    try {
-      const decodedParam = decodeURIComponent(playlistParam);
-      const parsed = JSON.parse(decodedParam);
-
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-        throw new Error("Invalid playlist data");
+    // No sessionId check needed
+    const unsubscribe = listenToCommands((message, ruleType) => {
+      // Handle rule type if needed
+      if (ruleType) {
+        // Set appropriate video URL based on rule type
+        // (Add this if you want different rule videos)
       }
 
-      console.log("Setting initial state with playlist:", parsed);
-      setSelectedPlaylist(parsed);
-      setRoundHistory(Array(parsed.length).fill(0));
-      setGameStarted(false);
-      setIsTimerActive(false);
-      if (timerRef.current) {
-        timerRef.current.reset();
-      }
-    } catch (error) {
-      console.error("Parse error:", error);
-      router.replace("/playlist-selection");
-    }
-  }, [searchParams, router]);
-
-  // Socket connection effect
-  useEffect(() => {
-    const socket = io("http://15.188.53.144:80/");
-
-    const handleAdminMessage = (message) => {
-      console.log("Admin message received:", message);
-
+      // Same command handling logic
       if (message === "Display Rules") {
         setShowRulesVideo(true);
         playRules();
@@ -136,10 +114,15 @@ const LocationPlayer = () => {
           setShowRulesVideo(false);
           setShowTimerStartVideo(false);
           setGameStarted(true);
-          setIsTimerActive(true);
-          if (timerRef.current) {
-            timerRef.current.start();
+
+          // Only activate the timer if this location should have one
+          if (shouldShowTimer()) {
+            setIsTimerActive(true);
+            if (timerRef.current) {
+              timerRef.current.start();
+            }
           }
+
           setExpectedIndex(currentIndex);
           stopAmbiance();
         }, 3000);
@@ -155,13 +138,9 @@ const LocationPlayer = () => {
         playPass();
         handleNextImage();
       }
-    };
+    });
 
-    socket.on("adminMessage", handleAdminMessage);
-    return () => {
-      socket.off("adminMessage", handleAdminMessage);
-      socket.disconnect();
-    };
+    return () => unsubscribe();
   }, [
     currentIndex,
     expectedIndex,
@@ -176,6 +155,24 @@ const LocationPlayer = () => {
     updateRoundHistory,
   ]);
 
+  useEffect(() => {
+    if (selectedPlaylist.length > 0) {
+      // Find which location this image belongs to
+      const locationWithImage = locations.find((location) =>
+        location.images.includes(selectedPlaylist[0])
+      );
+
+      if (locationWithImage) {
+        setVideoUrlForRules(locationWithImage.videoUrl);
+      } else {
+        // Default fallback video
+        setVideoUrlForRules(
+          "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_classic.webm"
+        );
+      }
+    }
+  }, [selectedPlaylist]);
+
   // Updated helper function to check if image is from locations dataset
   const isImagePanorama = useCallback((imageUrl) => {
     return locations.some((location) =>
@@ -183,26 +180,56 @@ const LocationPlayer = () => {
     );
   }, []);
 
+  // Add a helper function to determine if timer should be shown
+  const shouldShowTimer = useCallback(() => {
+    if (
+      selectedPlaylist.length === 0 ||
+      currentIndex >= selectedPlaylist.length
+    ) {
+      return false;
+    }
+
+    // Get the current image/location
+    const currentImage = selectedPlaylist[currentIndex];
+
+    // Find which location this image belongs to
+    for (const location of locations) {
+      const isImageFromLocation = location.images.some((img) =>
+        typeof img === "object"
+          ? img.url === currentImage || img === currentImage
+          : img === currentImage
+      );
+
+      if (isImageFromLocation) {
+        // Don't show timer for Stanley (id: 4) or DS3-ER (id: 3)
+        return location.id !== 3 && location.id !== 4;
+      }
+    }
+
+    return true; // Default to showing timer
+  }, [currentIndex, selectedPlaylist]);
+
   return (
     <div className="relative flex content-center justify-center cursor-custom-move">
       {showRulesVideo && (
         <RulesVideo
           showBlendedVideo={showBlendedVideo}
-          videoUrl="https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_wow.webm"
+          videoUrl={videoUrlForRules}
         />
       )}
       {showTimerStartVideo && <TimerStartVideo />}
+
       {gameStarted && selectedPlaylist.length > 0 && (
         <>
           {isImagePanorama(selectedPlaylist[currentIndex]) ? (
             <Viewer360
-              key={currentIndex}
+              key={`panorama-${currentIndex}`}
               imageUrl={selectedPlaylist[currentIndex]}
             />
           ) : (
             <div className="relative w-full h-screen">
               <Image
-                key={currentIndex}
+                key={`image-${currentIndex}`}
                 src={selectedPlaylist[currentIndex]}
                 alt="Game location"
                 fill
@@ -211,19 +238,26 @@ const LocationPlayer = () => {
               />
             </div>
           )}
-          <Timer
-            ref={timerRef}
-            key={`timer-${isTimerActive}`}
-            duration={59}
-            roundHistory={roundHistory}
-            onTimerEnd={handleTimerEnd}
-          />
-          <RotatedHistoryBar
-            totalRounds={selectedPlaylist.length}
-            roundHistory={roundHistory}
-            currentRoundId={currentIndex}
-          />
         </>
+      )}
+
+      {/* Conditionally render the Timer based on the location */}
+      {gameStarted && shouldShowTimer() && (
+        <Timer
+          ref={timerRef}
+          key={timerKey}
+          duration={60}
+          roundHistory={roundHistory}
+          onTimerEnd={handleTimerEnd}
+        />
+      )}
+
+      {gameStarted && (
+        <RotatedHistoryBar
+          totalRounds={selectedPlaylist.length}
+          roundHistory={roundHistory}
+          currentRoundId={currentIndex}
+        />
       )}
     </div>
   );

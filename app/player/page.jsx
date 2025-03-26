@@ -1,6 +1,5 @@
 "use client";
 import ImagePlayer from "@/components/ImagePlayer";
-import SoundPlayer from "@/components/SoundPlayer";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
@@ -14,7 +13,6 @@ const PlayerContent = () => {
   const [roundHistory, setRoundHistory] = useState(
     Array(selectedPlaylist.length).fill(0)
   );
-  const [soundsPlayed, setSoundsPlayed] = useState(0);
 
   const updateRoundHistory = () => {
     setRoundHistory((prevHistory) => {
@@ -26,10 +24,6 @@ const PlayerContent = () => {
       newHistory[currentIndex] = 1;
       return newHistory;
     });
-  };
-
-  const handleSoundPlayed = () => {
-    setSoundsPlayed((prevSoundsPlayed) => prevSoundsPlayed + 1);
   };
 
   useEffect(() => {
@@ -47,7 +41,6 @@ const PlayerContent = () => {
     currentIndex,
     selectedPlaylist.length,
     playlistType,
-    soundsPlayed,
   ]);
 
   return (
@@ -56,17 +49,6 @@ const PlayerContent = () => {
         <ImagePlayer
           playlist={selectedPlaylist}
           isPanorama={playlistType === "panorama"}
-        />
-      )}
-      {playlistType === "sound" && (
-        <SoundPlayer
-          playlist={selectedPlaylist}
-          onCorrect={updateRoundHistory}
-          onWrong={() => {}}
-          roundHistory={roundHistory}
-          currentIndex={currentIndex}
-          setCurrentIndex={setCurrentIndex}
-          handleSoundPlayed={handleSoundPlayed}
         />
       )}
     </div>

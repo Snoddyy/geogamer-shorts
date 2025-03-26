@@ -2,7 +2,6 @@
 "use client";
 import { images } from "@/components/images";
 import { locations } from "@/components/locations";
-import { soundPlaylists } from "@/components/sounds";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
@@ -32,17 +31,6 @@ const PlaylistSelection = () => {
           )}&playlistType=image`
         );
       }
-    } else if (playlistType === "sound") {
-      const selectedPlaylist = soundPlaylists.find(
-        (playlist) => playlist.id === playlistId
-      );
-      if (selectedPlaylist) {
-        router.push(
-          `/player?playlist=${JSON.stringify(
-            selectedPlaylist.sounds
-          )}&playlistType=sound`
-        );
-      }
     }
   };
 
@@ -69,19 +57,6 @@ const PlaylistSelection = () => {
             <Button
               key={playlist.id}
               onClick={() => handlePlaylistSelection(playlist.id, "image")}
-              className="w-48 h-12 px-4 py-2"
-              variant="default"
-            >
-              {playlist.name}
-            </Button>
-          ))}
-        </div>
-        <div className="flex flex-col items-center justify-start gap-4">
-          <h2 className="mb-2 text-xl">Sound</h2>
-          {soundPlaylists.map((playlist) => (
-            <Button
-              key={playlist.id}
-              onClick={() => handlePlaylistSelection(playlist.id, "sound")}
               className="w-48 h-12 px-4 py-2"
               variant="default"
             >

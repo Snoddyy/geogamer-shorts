@@ -27,7 +27,7 @@ const videos = [
     key: 5,
     name: "classic",
     videoUrl:
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_classic.webm.webm",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_classic.webm",
   },
 ];
 
