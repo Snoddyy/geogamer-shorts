@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { sendCommand, setRuleType } from "@/utils/gameService";
 
 const AdminPage = () => {
@@ -54,6 +54,27 @@ const AdminPage = () => {
     handleCommand("Stop Sound");
   }, [handleCommand]);
 
+  // Add keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "x") {
+        handleFalse();
+      } else if (event.key === " " || event.key === "Spacebar") {
+        event.preventDefault(); // Prevent page scrolling on space
+        handlePass();
+      } else if (event.key === "Enter") {
+        handleCorrect();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Clean up event listener on component unmount
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleCorrect, handleFalse, handlePass]);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
       <h1 className="mb-6 text-3xl font-bold">Admin Control Panel</h1>
@@ -88,18 +109,6 @@ const AdminPage = () => {
           className="bg-yellow-500 hover:bg-yellow-600"
         >
           Pass
-        </Button>
-        <Button
-          onClick={handleReplay}
-          className="bg-purple-500 hover:bg-purple-600"
-        >
-          Replay
-        </Button>
-        <Button
-          onClick={handleStopSound}
-          className="bg-gray-500 hover:bg-gray-600"
-        >
-          Stop Sound
         </Button>
       </div>
 

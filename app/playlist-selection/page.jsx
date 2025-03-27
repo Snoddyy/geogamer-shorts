@@ -4,11 +4,19 @@ import { images } from "@/components/images";
 import { locations } from "@/components/locations";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const PlaylistSelection = () => {
   const router = useRouter();
 
+  useEffect(() => {
+    localStorage.removeItem("gameState");
+    console.log("Game state reset on playlist selection page");
+  }, []);
+
   const handlePlaylistSelection = (playlistId, playlistType) => {
+    const timestamp = Date.now();
+
     if (playlistType === "panorama") {
       const selectedPlaylist = locations.find(
         (playlist) => playlist.id === playlistId
@@ -17,7 +25,7 @@ const PlaylistSelection = () => {
         router.push(
           `/player?playlist=${JSON.stringify(
             selectedPlaylist.images
-          )}&playlistType=panorama`
+          )}&playlistType=panorama&t=${timestamp}`
         );
       }
     } else if (playlistType === "image") {
@@ -28,7 +36,7 @@ const PlaylistSelection = () => {
         router.push(
           `/player?playlist=${JSON.stringify(
             selectedPlaylist.images
-          )}&playlistType=image`
+          )}&playlistType=image&t=${timestamp}`
         );
       }
     }
