@@ -3,8 +3,9 @@ import { database, ref, onValue, set, push } from "./firebaseConfig";
 // Global state value for selected rule type
 let currentRuleType = "classic"; // default rule type
 
-// Add this at the top with other state
-let lastProcessedTimestamp = "";
+// Replace the in-memory variable with localStorage
+let lastProcessedTimestamp =
+  localStorage.getItem("lastProcessedTimestamp") || "";
 
 // Set rule type
 export const setRuleType = (ruleType) => {
@@ -26,12 +27,16 @@ export const getCurrentRuleType = () => {
 export const sendCommand = (command) => {
   const commandsRef = ref(database, "broadcastCommands");
   const newCommandRef = push(commandsRef);
+  const timestamp = new Date().toISOString();
 
   set(newCommandRef, {
     type: command,
-    ruleType: currentRuleType, // Include current rule type with command
-    timestamp: new Date().toISOString(),
+    ruleType: currentRuleType,
+    timestamp: timestamp,
   });
+
+  // Store the timestamp in localStorage when sending a command
+  localStorage.setItem("lastProcessedTimestamp", timestamp);
 
   console.log(
     `Broadcasting command: ${command} with rule type: ${currentRuleType}`
@@ -53,6 +58,8 @@ export const listenToCommands = (callback) => {
       // Only process if this is a new command
       if (latestCommand.timestamp !== lastProcessedTimestamp) {
         lastProcessedTimestamp = latestCommand.timestamp;
+        // Update localStorage when processing a command
+        localStorage.setItem("lastProcessedTimestamp", lastProcessedTimestamp);
         callback(latestCommand.type, latestCommand.ruleType || currentRuleType);
       }
     }
