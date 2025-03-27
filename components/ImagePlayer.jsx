@@ -73,7 +73,7 @@ const ImagePlayer = () => {
       }
     }
     // Fallback to classic rules video if no match found
-    return "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_classic.webm";
+    return "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_logo.webm";
   })();
 
   const [videoUrl, setVideoUrl] = useState(initialVideoUrl);
@@ -186,10 +186,17 @@ const ImagePlayer = () => {
     const unsubscribe = listenToCommands((message, ruleType) => {
       if (ruleType) {
         if (ruleType === "classic") {
-          setVideoUrl(
-            "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_background_short_rules_classic.webm"
-          );
-        } else if (ruleType === "logos") {
+          const classicRules =
+            locations.find((location) =>
+              location.videoUrl.includes("rules_classic")
+            ) ||
+            images.find((imageSet) =>
+              imageSet.videoUrl.includes("rules_classic")
+            );
+
+          if (classicRules) {
+            setVideoUrl(classicRules.videoUrl);
+          }
         }
       }
 

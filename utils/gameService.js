@@ -3,9 +3,11 @@ import { database, ref, onValue, set, push } from "./firebaseConfig";
 // Global state value for selected rule type
 let currentRuleType = "classic"; // default rule type
 
-// Replace the in-memory variable with localStorage
-let lastProcessedTimestamp =
-  localStorage.getItem("lastProcessedTimestamp") || "";
+// Replace direct localStorage access with a browser-safe check
+let lastProcessedTimestamp = "";
+if (typeof window !== "undefined") {
+  lastProcessedTimestamp = localStorage.getItem("lastProcessedTimestamp") || "";
+}
 
 // Set rule type
 export const setRuleType = (ruleType) => {
