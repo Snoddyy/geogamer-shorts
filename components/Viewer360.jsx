@@ -35,7 +35,6 @@ const Viewer360 = ({ imageUrl, defaultYaw, defaultFov }) => {
       } else {
         console.log("Updating panorama to:", imageUrl);
         viewerRef.current.setPanorama(imageUrl);
-        // Update position and zoom for existing viewer
         viewerRef.current.setPosition({ yaw: defaultYaw || 0 });
         viewerRef.current.setZoomLevel(defaultFov || 50);
       }

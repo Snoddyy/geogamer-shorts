@@ -385,8 +385,8 @@ const ImagePlayer = () => {
             <Viewer360
               key={`panorama-${currentIndex}`}
               imageUrl={processedPlaylist[currentIndex].url}
-              initialYaw={processedPlaylist[currentIndex].yaw}
-              initialFov={processedPlaylist[currentIndex].fov}
+              defaultYaw={processedPlaylist[currentIndex].yaw}
+              defaultFov={processedPlaylist[currentIndex].fov}
             />
           ) : (
             <div className="relative w-full h-screen">

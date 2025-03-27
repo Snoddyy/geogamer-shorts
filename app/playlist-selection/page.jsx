@@ -10,8 +10,15 @@ const PlaylistSelection = () => {
   const router = useRouter();
 
   useEffect(() => {
+    // Clear all game-related localStorage items
     localStorage.removeItem("gameState");
-    console.log("Game state reset on playlist selection page");
+    localStorage.removeItem("currentIndex");
+    localStorage.removeItem("roundHistory");
+    localStorage.removeItem("expectedIndex");
+    localStorage.removeItem("lastProcessedTimestamp");
+    // If you have any other game state in localStorage, add them here
+
+    console.log("All game state cleared from localStorage");
   }, []);
 
   const handlePlaylistSelection = (playlistId, playlistType) => {

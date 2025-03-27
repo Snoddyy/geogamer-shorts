@@ -176,7 +176,9 @@ const LocationPlayer = () => {
   // Updated helper function to check if image is from locations dataset
   const isImagePanorama = useCallback((imageUrl) => {
     return locations.some((location) =>
-      location.images.some((img) => img === imageUrl)
+      location.images.some((img) =>
+        typeof img === "object" ? img.url === imageUrl : img === imageUrl
+      )
     );
   }, []);
 
@@ -222,10 +224,33 @@ const LocationPlayer = () => {
       {gameStarted && selectedPlaylist.length > 0 && (
         <>
           {isImagePanorama(selectedPlaylist[currentIndex]) ? (
-            <Viewer360
-              key={`panorama-${currentIndex}`}
-              imageUrl={selectedPlaylist[currentIndex]}
-            />
+            (() => {
+              // Find the matching image with its yaw and fov values
+              for (const location of locations) {
+                const panoramaImage = location.images.find(
+                  (img) =>
+                    typeof img === "object" &&
+                    img.url === selectedPlaylist[currentIndex]
+                );
+                if (panoramaImage) {
+                  return (
+                    <Viewer360
+                      key={`panorama-${currentIndex}`}
+                      imageUrl={panoramaImage.url}
+                      defaultYaw={panoramaImage.yaw}
+                      defaultFov={panoramaImage.fov}
+                    />
+                  );
+                }
+              }
+              // Fallback if not found
+              return (
+                <Viewer360
+                  key={`panorama-${currentIndex}`}
+                  imageUrl={selectedPlaylist[currentIndex]}
+                />
+              );
+            })()
           ) : (
             <div className="relative w-full h-screen">
               <Image
