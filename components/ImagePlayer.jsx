@@ -331,8 +331,9 @@ const ImagePlayer = () => {
                     : processedPlaylist[currentIndex]
                 }
                 alt="Game location"
-                fill
-                className="object-contain"
+                className="object-contain relative"
+                height={1080}
+                width={1080}
                 priority
               />
             </div>

@@ -150,22 +150,6 @@ const Timer = ({ duration, roundHistory, onTimerEnd }) => {
           onError={(e) => console.error("Timer video error:", e)}
         />
       </div>
-      {/* Add a text overlay of the timer to ensure it's always visible */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          fontSize: "36px",
-          fontWeight: "bold",
-          color: "white",
-          textShadow: "2px 2px 4px rgba(0, 0, 0, 0.8)",
-          zIndex: 51,
-        }}
-      >
-        {formatTime(displayTime)}
-      </div>
     </div>
   );
 };
