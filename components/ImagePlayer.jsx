@@ -167,6 +167,37 @@ const ImagePlayer = () => {
           let startIndex = prevIndex;
           do {
             nextIndex = (nextIndex + 1) % selectedPlaylist.length;
+
+            // Check if this is a special location (ER+DS3 or Stanley)
+            const currentImage = processedPlaylist[prevIndex];
+            const currentImageUrl =
+              typeof currentImage === "object" && currentImage.url
+                ? currentImage.url
+                : currentImage;
+
+            let isSpecialLocation = false;
+            for (const location of locations) {
+              if (location.id === 3 || location.id === 4) {
+                isSpecialLocation = location.images.some((img) =>
+                  typeof img === "object"
+                    ? img.url === currentImageUrl
+                    : img === currentImageUrl
+                );
+
+                if (isSpecialLocation) break;
+              }
+            }
+
+            // For special locations, if we've gone through all images, go to score screen
+            if (isSpecialLocation && nextIndex === 0) {
+              const score = roundHistory.filter((value) => value === 1).length;
+              router.push(
+                `/score?score=${score}&total=${selectedPlaylist.length}`
+              );
+              return prevIndex; // Return current index as we're navigating away
+            }
+
+            // Normal loop check - if we've seen all images
             if (nextIndex === startIndex) {
               setDestroyingViewer(false);
               setExpectedIndex(nextIndex);
@@ -180,7 +211,13 @@ const ImagePlayer = () => {
         });
       }, 300);
     }
-  }, [destroyingViewer, roundHistory, selectedPlaylist.length]);
+  }, [
+    destroyingViewer,
+    roundHistory,
+    selectedPlaylist.length,
+    processedPlaylist,
+    router,
+  ]);
 
   useEffect(() => {
     const unsubscribe = listenToCommands((message, ruleType) => {
@@ -225,7 +262,31 @@ const ImagePlayer = () => {
         }
       } else if (message === "Wrong") {
         playWrong();
-        console.log("Wrong");
+
+        // For ER+DS3 (id: 3) or Stanley (id: 4), "Wrong" acts like "Pass"
+        const currentImage = processedPlaylist[currentIndex];
+        const currentImageUrl =
+          typeof currentImage === "object" && currentImage.url
+            ? currentImage.url
+            : currentImage;
+
+        let isSpecialLocation = false;
+        for (const location of locations) {
+          if (location.id === 3 || location.id === 4) {
+            // Check if image is from DS3-ER or Stanley
+            isSpecialLocation = location.images.some((img) =>
+              typeof img === "object"
+                ? img.url === currentImageUrl
+                : img === currentImageUrl
+            );
+
+            if (isSpecialLocation) break;
+          }
+        }
+
+        if (isSpecialLocation) {
+          handleNextImage();
+        }
       } else if (message === "Pass") {
         playPass();
         handleNextImage();
