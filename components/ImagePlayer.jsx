@@ -435,7 +435,7 @@ const ImagePlayer = () => {
       {gameStarted && shouldShowTimer() && (
         <Timer
           key={timerKey}
-          duration={20}
+          duration={60}
           roundHistory={roundHistory}
           onTimerEnd={handleTimerEnd}
         />

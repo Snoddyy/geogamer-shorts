@@ -31,6 +31,11 @@ const Timer = ({ duration, roundHistory, onTimerEnd }) => {
   const [playWarning] = useSound(warningUrl, {
     volume: 1.0,
     preload: true,
+    onLoad: () => console.log("Warning sound loaded successfully:", warningUrl),
+    onError: (error) =>
+      console.error("Warning sound load error:", error, warningUrl),
+    onPlay: () => console.log("Warning sound started playing"),
+    onEnd: () => console.log("Warning sound finished playing"),
   });
 
   const formatTime = (time) => {
@@ -144,6 +149,10 @@ const Timer = ({ duration, roundHistory, onTimerEnd }) => {
 
   // Initialize timer once
   useEffect(() => {
+    console.log("Timer initializing - Warning sound config:", {
+      warningSound,
+      warningUrl,
+    });
     // Reset all flags for new timer
     hasEndedRef.current = false;
     hasPlayedWarningRef.current = false;
@@ -243,11 +252,33 @@ const Timer = ({ duration, roundHistory, onTimerEnd }) => {
         remainingSeconds,
         "seconds remaining"
       );
+      console.log("Warning sound URL:", warningUrl);
+      console.log("playWarning function:", typeof playWarning, playWarning);
       hasPlayedWarningRef.current = true;
       try {
-        playWarning();
+        const result = playWarning();
+        console.log("playWarning() result:", result);
+
+        // If playWarning returns undefined, try HTML5 audio fallback
+        if (!result && warningUrl) {
+          console.log(
+            "playWarning returned undefined, trying HTML5 audio fallback"
+          );
+          const audio = new Audio(warningUrl);
+          audio.volume = 1.0;
+          audio
+            .play()
+            .then(() => console.log("HTML5 audio fallback played successfully"))
+            .catch((error) => {
+              console.error("HTML5 audio fallback failed:", error);
+              console.log("Falling back to timer start sound");
+              playTimerStart();
+            });
+        }
       } catch (error) {
+        console.error("Error calling playWarning:", error);
         // Fallback to timer start sound if warning sound fails
+        console.log("Falling back to timer start sound");
         playTimerStart();
       }
     }

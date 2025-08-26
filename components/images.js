@@ -118,8 +118,8 @@ export const images = [
     videoUrl:
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/e10/fantasy_map.webm",
     images: [
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/13_fantasy_maps_1/1-1.webp",
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/13_fantasy_maps_1/1-2.webp",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/13_fantasy_maps_1/1-1.webp",
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/13_fantasy_maps_1/1-3.webp",
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/13_fantasy_maps_1/1-4.webp",
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/13_fantasy_maps_1/1-5.webp",
@@ -148,8 +148,8 @@ export const images = [
     images: [
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/15_cover_art_1/1-1.webp",
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/15_cover_art_1/1-2.webp",
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/15_cover_art_1/1-3.webp",
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/15_cover_art_1/1-4.webp",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/15_cover_art_1/1-3.webp",
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/15_cover_art_1/1-5.webp",
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/15_cover_art_1/1-6.webp",
     ],
