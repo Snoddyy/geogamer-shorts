@@ -7,6 +7,8 @@ import TimerStartVideo from "@/components/TimerStartVideo";
 import { sounds } from "@/components/sounds";
 import { soundDesign } from "@/components/soundDesign";
 import Timer from "@/components/ui/timer";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { listenToCommands, setAudioPlayingState } from "@/utils/gameService";
@@ -76,8 +78,20 @@ const SoundPlayer = () => {
   const [currentAudioUrl, setCurrentAudioUrl] = useState("");
   const [isManuallyPaused, setIsManuallyPaused] = useState(false);
   const [forcePlayTrigger, setForcePlayTrigger] = useState(0);
+  const [currentSoundEvent, setCurrentSoundEvent] = useState(null);
 
   const [timerKey] = useState("persistent-sound-timer");
+
+  // Helper function to trigger sound events for the visualizer
+  const triggerSoundEvent = useCallback((eventType) => {
+    const eventId = Date.now(); // Unique ID to ensure the effect triggers
+    setCurrentSoundEvent({ type: eventType, id: eventId });
+
+    // Clear the event after a short delay to allow for re-triggering
+    setTimeout(() => {
+      setCurrentSoundEvent(null);
+    }, 100);
+  }, []);
 
   const handleTimerEnd = useCallback(() => {
     if (gameAudioRef.current) {
@@ -95,7 +109,7 @@ const SoundPlayer = () => {
     router.push(`/score?score=${score}&total=${selectedPlaylist.length}`);
   }, [roundHistory, selectedPlaylist.length, router]);
 
-  const handleNextSound = useCallback(() => {
+  const stopCurrentTrack = useCallback(() => {
     if (gameAudioRef.current) {
       shouldBePlayingRef.current = false;
       gameAudioRef.current.pause();
@@ -105,6 +119,10 @@ const SoundPlayer = () => {
     isTransitioningRef.current = true;
     // Reset manual pause state when moving to next sound
     setIsManuallyPaused(false);
+  }, []);
+
+  const handleNextSound = useCallback(() => {
+    stopCurrentTrack();
     setTimeout(() => {
       setCurrentIndex((prevIndex) => {
         let nextIndex = prevIndex;
@@ -128,7 +146,7 @@ const SoundPlayer = () => {
         return nextIndex;
       });
     }, 300);
-  }, [roundHistory, selectedPlaylist.length]);
+  }, [roundHistory, selectedPlaylist.length, stopCurrentTrack]);
 
   const updateRoundHistory = useCallback(() => {
     setRoundHistory((prevHistory) => {
@@ -319,15 +337,26 @@ const SoundPlayer = () => {
         }, 3000);
       } else if (message === "Correct") {
         if (currentIndex === expectedIndex) {
+          stopCurrentTrack(); // Stop current track immediately
           playCorrect();
+          triggerSoundEvent("correct");
           updateRoundHistory();
-          handleNextSound();
+          // Delay next sound to let the correct sound effect finish
+          setTimeout(() => {
+            handleNextSound();
+          }, 800); // 800ms delay
         }
       } else if (message === "Wrong") {
         playWrong();
+        triggerSoundEvent("wrong");
       } else if (message === "Pass") {
+        stopCurrentTrack(); // Stop current track immediately
         playPass();
-        handleNextSound();
+        triggerSoundEvent("pass");
+        // Delay next sound to let the pass sound effect finish
+        setTimeout(() => {
+          handleNextSound();
+        }, 600); // 600ms delay (pass sound is typically shorter)
       } else if (message === "Stop Sound") {
         if (gameAudioRef.current) {
           shouldBePlayingRef.current = false;
@@ -426,6 +455,8 @@ const SoundPlayer = () => {
     playWrong,
     stopAmbiance,
     updateRoundHistory,
+    triggerSoundEvent,
+    stopCurrentTrack,
   ]);
 
   const handleAudioEnded = () => {
@@ -454,51 +485,69 @@ const SoundPlayer = () => {
   };
 
   return (
-    <div className="relative flex content-center justify-center cursor-default">
-      <audio
-        ref={gameAudioRef}
-        crossOrigin="anonymous"
-        preload="auto"
-        loop={false}
-        onEnded={handleAudioEnded}
-        onPause={handleAudioPause}
-        onPlay={handleAudioPlay}
-      />
-
-      {showRulesVideo && (
-        <RulesVideo showBlendedVideo={showBlendedVideo} videoUrl={videoUrl} />
-      )}
-      {showTimerStartVideo && <TimerStartVideo />}
-
-      {gameStarted && (
-        <>
-          <div className="relative w-full h-screen">
-            <BackgroundVideo />
-            <AudioVisualizer
-              audioRef={gameAudioRef}
-              isPlaying={isAudioPlaying}
-            />
-          </div>
-        </>
-      )}
-
+    <>
       {gameStarted && (
         <Timer
           key={timerKey}
-          duration={60}
+          duration={999}
           roundHistory={roundHistory}
           onTimerEnd={handleTimerEnd}
         />
       )}
-
-      {gameStarted && (
-        <RotatedHistoryBar
-          totalRounds={selectedPlaylist.length}
-          roundHistory={roundHistory}
-          currentRoundId={currentIndex}
+      <div className="relative flex content-center justify-center cursor-default">
+        <audio
+          ref={gameAudioRef}
+          crossOrigin="anonymous"
+          preload="auto"
+          loop={false}
+          onEnded={handleAudioEnded}
+          onPause={handleAudioPause}
+          onPlay={handleAudioPlay}
         />
-      )}
-    </div>
+
+        {showRulesVideo && (
+          <RulesVideo showBlendedVideo={showBlendedVideo} videoUrl={videoUrl} />
+        )}
+        {showTimerStartVideo && <TimerStartVideo />}
+
+        {gameStarted && (
+          <>
+            <div className="relative w-full h-screen">
+              <BackgroundVideo />
+              <AudioVisualizer
+                audioRef={gameAudioRef}
+                isPlaying={isAudioPlaying}
+                soundEvent={currentSoundEvent}
+              />
+            </div>
+          </>
+        )}
+
+        {gameStarted && (
+          <RotatedHistoryBar
+            totalRounds={selectedPlaylist.length}
+            roundHistory={roundHistory}
+            currentRoundId={currentIndex}
+          />
+        )}
+
+        {/* Return to Main Menu Button */}
+        <div className="fixed bottom-6 right-6 z-50">
+          <Link href="/">
+            <Button
+              variant="outline"
+              size="lg"
+              className="bg-background/80 backdrop-blur-sm hover:bg-background/90 border-2 shadow-lg"
+            >
+              <div className="flex items-center gap-2">
+                <span>🏠</span>
+                <span>Main Menu</span>
+              </div>
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </>
   );
 };
 

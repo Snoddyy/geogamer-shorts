@@ -6,7 +6,9 @@ import Viewer360 from "@/components/Viewer360";
 import { locations } from "@/components/locations";
 import { soundDesign } from "@/components/soundDesign";
 import Timer from "@/components/ui/timer";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listenToCommands } from "@/utils/gameService";
@@ -212,60 +214,7 @@ const LocationPlayer = () => {
   }, [currentIndex, selectedPlaylist]);
 
   return (
-    <div className="relative flex content-center justify-center cursor-custom-move">
-      {showRulesVideo && (
-        <RulesVideo
-          showBlendedVideo={showBlendedVideo}
-          videoUrl={videoUrlForRules}
-        />
-      )}
-      {showTimerStartVideo && <TimerStartVideo />}
-
-      {gameStarted && selectedPlaylist.length > 0 && (
-        <>
-          {isImagePanorama(selectedPlaylist[currentIndex]) ? (
-            (() => {
-              // Find the matching image with its yaw and fov values
-              for (const location of locations) {
-                const panoramaImage = location.images.find(
-                  (img) =>
-                    typeof img === "object" &&
-                    img.url === selectedPlaylist[currentIndex]
-                );
-                if (panoramaImage) {
-                  return (
-                    <Viewer360
-                      key={`panorama-${currentIndex}`}
-                      imageUrl={panoramaImage.url}
-                      defaultYaw={panoramaImage.yaw}
-                      defaultFov={panoramaImage.fov}
-                    />
-                  );
-                }
-              }
-              // Fallback if not found
-              return (
-                <Viewer360
-                  key={`panorama-${currentIndex}`}
-                  imageUrl={selectedPlaylist[currentIndex]}
-                />
-              );
-            })()
-          ) : (
-            <div className="relative w-full h-screen">
-              <Image
-                key={`image-${currentIndex}`}
-                src={selectedPlaylist[currentIndex]}
-                alt="Game location"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-          )}
-        </>
-      )}
-
+    <>
       {/* Conditionally render the Timer based on the location */}
       {gameStarted && shouldShowTimer() && (
         <Timer
@@ -276,15 +225,85 @@ const LocationPlayer = () => {
           onTimerEnd={handleTimerEnd}
         />
       )}
+      <div className="relative flex content-center justify-center cursor-custom-move">
+        {showRulesVideo && (
+          <RulesVideo
+            showBlendedVideo={showBlendedVideo}
+            videoUrl={videoUrlForRules}
+          />
+        )}
+        {showTimerStartVideo && <TimerStartVideo />}
 
-      {gameStarted && (
-        <RotatedHistoryBar
-          totalRounds={selectedPlaylist.length}
-          roundHistory={roundHistory}
-          currentRoundId={currentIndex}
-        />
-      )}
-    </div>
+        {gameStarted && selectedPlaylist.length > 0 && (
+          <>
+            {isImagePanorama(selectedPlaylist[currentIndex]) ? (
+              (() => {
+                // Find the matching image with its yaw and fov values
+                for (const location of locations) {
+                  const panoramaImage = location.images.find(
+                    (img) =>
+                      typeof img === "object" &&
+                      img.url === selectedPlaylist[currentIndex]
+                  );
+                  if (panoramaImage) {
+                    return (
+                      <Viewer360
+                        key={`panorama-${currentIndex}`}
+                        imageUrl={panoramaImage.url}
+                        defaultYaw={panoramaImage.yaw}
+                        defaultFov={panoramaImage.fov}
+                      />
+                    );
+                  }
+                }
+                // Fallback if not found
+                return (
+                  <Viewer360
+                    key={`panorama-${currentIndex}`}
+                    imageUrl={selectedPlaylist[currentIndex]}
+                  />
+                );
+              })()
+            ) : (
+              <div className="relative w-full h-screen">
+                <Image
+                  key={`image-${currentIndex}`}
+                  src={selectedPlaylist[currentIndex]}
+                  alt="Game location"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            )}
+          </>
+        )}
+
+        {gameStarted && (
+          <RotatedHistoryBar
+            totalRounds={selectedPlaylist.length}
+            roundHistory={roundHistory}
+            currentRoundId={currentIndex}
+          />
+        )}
+
+        {/* Return to Main Menu Button */}
+        <div className="fixed bottom-6 right-6 z-50">
+          <Link href="/">
+            <Button
+              variant="outline"
+              size="lg"
+              className="bg-background/80 backdrop-blur-sm hover:bg-background/90 border-2 shadow-lg"
+            >
+              <div className="flex items-center gap-2">
+                <span>🏠</span>
+                <span>Main Menu</span>
+              </div>
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </>
   );
 };
 

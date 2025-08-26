@@ -7,6 +7,7 @@ import {
   sendCommand,
   setRuleType,
   listenToAudioState,
+  clearAllCommands,
 } from "@/utils/gameService";
 
 const AdminPage = () => {
@@ -52,6 +53,8 @@ const AdminPage = () => {
   }, [handleCommand]);
 
   const handlePlayAgain = useCallback(() => {
+    // Clear all commands before going back to mode selection
+    clearAllCommands();
     router.push("/");
   }, [router]);
 
@@ -88,7 +91,7 @@ const AdminPage = () => {
       } else if (event.key === " " || event.key === "Spacebar") {
         event.preventDefault(); // Prevent page scrolling on space
         handlePass();
-      } else if (event.key === "Enter") {
+      } else if (event.key === "e" || event.key === "E") {
         handleCorrect();
       } else if (event.key === "s" || event.key === "S") {
         handleStopSound();
@@ -124,7 +127,7 @@ const AdminPage = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div className="flex items-center gap-2">
               <kbd className="px-2 py-1 bg-muted text-muted-foreground rounded text-xs font-mono">
-                Enter
+                E
               </kbd>
               <span className="text-muted-foreground">Correct</span>
             </div>

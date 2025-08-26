@@ -131,6 +131,7 @@ export const images = [
     name: "Countries",
     videoUrl:
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/e10/countries_eu.webm",
+    timerDuration: 90,
     images: [
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/14_countries_1/1-1.webp",
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/14_countries_1/1-2.webp",
@@ -201,6 +202,7 @@ export const images = [
     name: "Countries World",
     videoUrl:
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/e10/countries.webm",
+    timerDuration: 90,
     images: [
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/19_countries_2/1-1.webp",
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/19_countries_2/1-2.webp",

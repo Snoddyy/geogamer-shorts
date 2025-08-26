@@ -7,7 +7,9 @@ import Viewer360 from "@/components/Viewer360";
 import { locations } from "@/components/locations";
 import { soundDesign } from "@/components/soundDesign";
 import Timer from "@/components/ui/timer";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { listenToCommands } from "@/utils/gameService";
@@ -160,6 +162,33 @@ const ImagePlayer = () => {
     }
 
     return true; // Show timer for all other locations
+  }, [currentIndex, processedPlaylist, selectedPlaylist.length]);
+
+  // Helper function to get timer duration based on current image set
+  const getTimerDuration = useCallback(() => {
+    if (
+      selectedPlaylist.length === 0 ||
+      currentIndex >= selectedPlaylist.length
+    ) {
+      return 60; // Default duration
+    }
+
+    // Get the URL of the current image
+    const currentImage = processedPlaylist[currentIndex];
+    const currentImageUrl =
+      typeof currentImage === "object" && currentImage.url
+        ? currentImage.url
+        : currentImage;
+
+    // Check if this image belongs to an image set with custom timer duration
+    for (const imageSet of images) {
+      const isFromImageSet = imageSet.images.includes(currentImageUrl);
+      if (isFromImageSet && imageSet.timerDuration) {
+        return imageSet.timerDuration;
+      }
+    }
+
+    return 60; // Default duration for all other sets
   }, [currentIndex, processedPlaylist, selectedPlaylist.length]);
 
   const handleTimerEnd = useCallback(() => {
@@ -395,60 +424,77 @@ const ImagePlayer = () => {
   }, []);
 
   return (
-    <div className="relative flex content-center justify-center cursor-custom-move">
-      {showRulesVideo && (
-        <RulesVideo showBlendedVideo={showBlendedVideo} videoUrl={videoUrl} />
-      )}
-      {showTimerStartVideo && <TimerStartVideo />}
-
-      {gameStarted && (
-        <>
-          {isImagePanorama(processedPlaylist[currentIndex]) ? (
-            <Viewer360
-              key={`panorama-${currentIndex}`}
-              imageUrl={processedPlaylist[currentIndex].url}
-              defaultYaw={processedPlaylist[currentIndex].yaw}
-              defaultFov={processedPlaylist[currentIndex].fov}
-            />
-          ) : (
-            <div className="relative w-full h-screen">
-              <BackgroundVideo />
-              <Image
-                key={`image-${currentIndex}`}
-                src={
-                  typeof processedPlaylist[currentIndex] === "object"
-                    ? processedPlaylist[currentIndex].url
-                    : processedPlaylist[currentIndex]
-                }
-                alt="Game location"
-                className="object-contain relative"
-                height={1080}
-                width={1080}
-                priority
-              />
-            </div>
-          )}
-        </>
-      )}
-
+    <>
       {/* Conditionally render the Timer based on the location */}
       {gameStarted && shouldShowTimer() && (
         <Timer
           key={timerKey}
-          duration={60}
+          duration={getTimerDuration()}
           roundHistory={roundHistory}
           onTimerEnd={handleTimerEnd}
         />
       )}
+      <div className="relative flex content-center justify-center cursor-custom-move">
+        {showRulesVideo && (
+          <RulesVideo showBlendedVideo={showBlendedVideo} videoUrl={videoUrl} />
+        )}
+        {showTimerStartVideo && <TimerStartVideo />}
 
-      {gameStarted && (
-        <RotatedHistoryBar
-          totalRounds={selectedPlaylist.length}
-          roundHistory={roundHistory}
-          currentRoundId={currentIndex}
-        />
-      )}
-    </div>
+        {gameStarted && (
+          <>
+            {isImagePanorama(processedPlaylist[currentIndex]) ? (
+              <Viewer360
+                key={`panorama-${currentIndex}`}
+                imageUrl={processedPlaylist[currentIndex].url}
+                defaultYaw={processedPlaylist[currentIndex].yaw}
+                defaultFov={processedPlaylist[currentIndex].fov}
+              />
+            ) : (
+              <div className="relative w-full h-screen">
+                <BackgroundVideo />
+                <Image
+                  key={`image-${currentIndex}`}
+                  src={
+                    typeof processedPlaylist[currentIndex] === "object"
+                      ? processedPlaylist[currentIndex].url
+                      : processedPlaylist[currentIndex]
+                  }
+                  alt="Game location"
+                  className="object-contain relative"
+                  height={1080}
+                  width={1080}
+                  priority
+                />
+              </div>
+            )}
+          </>
+        )}
+
+        {gameStarted && (
+          <RotatedHistoryBar
+            totalRounds={selectedPlaylist.length}
+            roundHistory={roundHistory}
+            currentRoundId={currentIndex}
+          />
+        )}
+
+        {/* Return to Main Menu Button */}
+        <div className="fixed bottom-6 right-6 z-50">
+          <Link href="/">
+            <Button
+              variant="outline"
+              size="lg"
+              className="bg-background/80 backdrop-blur-sm hover:bg-background/90 border-2 shadow-lg"
+            >
+              <div className="flex items-center gap-2">
+                <span>🏠</span>
+                <span>Main Menu</span>
+              </div>
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </>
   );
 };
 

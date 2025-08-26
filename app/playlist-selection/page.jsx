@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
+import { clearAllCommands } from "@/utils/gameService";
 
 const PlaylistSelection = () => {
   const router = useRouter();
@@ -20,7 +21,12 @@ const PlaylistSelection = () => {
     localStorage.removeItem("lastProcessedTimestamp");
     // If you have any other game state in localStorage, add them here
 
-    console.log("All game state cleared from localStorage");
+    // Clear all commands from Firebase to prevent replay in new games
+    clearAllCommands();
+
+    console.log(
+      "All game state cleared from localStorage and Firebase commands cleared"
+    );
   }, []);
 
   const handlePlaylistSelection = (playlistId, playlistType) => {

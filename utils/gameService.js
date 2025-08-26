@@ -72,6 +72,13 @@ export const sendCommand = (command) => {
   );
 };
 
+// Clear all commands from Firebase
+export const clearAllCommands = () => {
+  const commandsRef = ref(database, "broadcastCommands");
+  set(commandsRef, null);
+  console.log("All commands cleared from Firebase");
+};
+
 // Listen for commands (all players)
 export const listenToCommands = (callback) => {
   const commandsRef = ref(database, "broadcastCommands");

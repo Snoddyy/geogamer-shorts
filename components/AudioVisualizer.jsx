@@ -135,11 +135,16 @@ void main(){
   vec3 circ = vec3(circle(uv,1.));
 
   vec3 color = mix(startColor,endColor,vDistance);
-  gl_FragColor=vec4(color,circ.r * vDistance);
+  
+  // Enhanced glow effect for white particles
+  float glow = circ.r * (1.0 + vDistance * 0.5);
+  float alpha = glow * (0.8 + vDistance * 0.4);
+  
+  gl_FragColor=vec4(color * (1.0 + glow * 0.3), alpha);
 }
 `;
 
-const AudioVisualizer = ({ audioRef, isPlaying }) => {
+const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
   const mountRef = useRef(null);
   const animationRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -162,6 +167,16 @@ const AudioVisualizer = ({ audioRef, isPlaying }) => {
   const contextRef = useRef(null);
   const colorSamplingRef = useRef({ enabled: false, intensity: 0.7 }); // Disabled by default
 
+  // Sound event reaction refs
+  const soundEventRef = useRef(null);
+  const eventAnimationRef = useRef({
+    isActive: false,
+    startTime: 0,
+    duration: 1000, // 1 second duration
+    type: null,
+  });
+  const rotationBoostRef = useRef(0); // For rotation speed boost during events
+
   // GUI properties
   const guiPropertiesRef = useRef(null);
   const segmentsFolderRef = useRef(null);
@@ -177,12 +192,12 @@ const AudioVisualizer = ({ audioRef, isPlaying }) => {
     });
 
     renderer.setClearColor(0x000000, 0);
-    renderer.setSize(800, 600);
+    renderer.setSize(1080, 1080);
     renderer.autoClear = false;
     mountRef.current.appendChild(renderer.domElement);
 
-    const camera = new THREE.PerspectiveCamera(70, 800 / 600, 0.1, 10000);
-    camera.position.z = 2;
+    const camera = new THREE.PerspectiveCamera(70, 1080 / 1080, 0.1, 10000);
+    camera.position.z = 4;
     camera.frustumCulled = false;
 
     const scene = new THREE.Scene();
@@ -218,22 +233,29 @@ const AudioVisualizer = ({ audioRef, isPlaying }) => {
       transparent: true,
       uniforms: {
         time: { value: 0 },
-        offsetSize: { value: 2 },
-        size: { value: 2 },
-        frequency: { value: 2 },
-        amplitude: { value: 0.8 },
-        offsetGain: { value: 0.5 },
-        maxDistance: { value: 1.8 },
-        startColor: { value: new THREE.Color(0x00ff00) }, // Green (was 0xe21b4d Red Bull red)
-        endColor: { value: new THREE.Color(0x004d00) }, // Dark green (was 0x004c6c Red Bull blue)
+        offsetSize: { value: 2.5 },
+        size: { value: 0 },
+        frequency: { value: 0.5 }, // Low frequency for smooth, controlled movement
+        amplitude: { value: 0.2 }, // Moderate amplitude for visible but controlled displacement
+        offsetGain: { value: 0.1 }, // Slight Z oscillation for depth
+        maxDistance: { value: 0.4 }, // Lower value for more visible displacement
+        startColor: { value: new THREE.Color(0xffffff) }, // Pure white
+        endColor: { value: new THREE.Color(0xcccccc) }, // Light gray for subtle variation
       },
     });
+
+    // Initialize userData to store original GUI values
+    material.userData = {
+      originalAmplitude: 0.2,
+      originalFrequency: 0.5,
+    };
+
     materialRef.current = material;
 
     // Create cube function
     const createCube = () => {
-      let widthSeg = 20; // Default to 20 instead of random
-      let heightSeg = 40; // Default to 40 instead of random
+      let widthSeg = 80; // Default to 80 instead of random
+      let heightSeg = 80; // Default to 80 instead of random
       let depthSeg = 80; // Default to 80 instead of random
 
       if (geometryRef.current) {
@@ -272,13 +294,13 @@ const AudioVisualizer = ({ audioRef, isPlaying }) => {
       };
 
       segmentsFolder
-        .add(guiPropertiesRef.current.segments, "width", 5, 20)
+        .add(guiPropertiesRef.current.segments, "width", 5, 100)
         .step(1);
       segmentsFolder
-        .add(guiPropertiesRef.current.segments, "height", 1, 40)
+        .add(guiPropertiesRef.current.segments, "height", 5, 100)
         .step(1);
       segmentsFolder
-        .add(guiPropertiesRef.current.segments, "depth", 5, 80)
+        .add(guiPropertiesRef.current.segments, "depth", 5, 100)
         .step(1);
       segmentsFolder
         .add(guiPropertiesRef.current, "randomizeSegments")
@@ -313,10 +335,10 @@ const AudioVisualizer = ({ audioRef, isPlaying }) => {
       segments: {},
       mesh: "Cube",
       autoRotate: true,
-      autoRandom: true, // Changed to true
+      autoRandom: false, // Match GUI settings (unchecked)
       rotationSpeed: {
-        x: -0.001, // Slower rotation on X-axis
-        y: -0.003, // Slower rotation on Y-axis
+        x: -0.005, // Match GUI settings
+        y: -0.005, // Match GUI settings
       },
       randomizeSegments: () => {
         createCube();
@@ -347,10 +369,18 @@ const AudioVisualizer = ({ audioRef, isPlaying }) => {
     const shaderFolder = gui.addFolder("Shader");
     shaderFolder
       .add(material.uniforms.frequency, "value", 0, 5)
-      .name("Frequency");
+      .name("Frequency")
+      .onChange((value) => {
+        // Update the stored original value when GUI changes
+        material.userData.originalFrequency = value;
+      });
     shaderFolder
-      .add(material.uniforms.amplitude, "value", 0, 5)
-      .name("Amplitude");
+      .add(material.uniforms.amplitude, "value", 0, 0.5)
+      .name("Amplitude")
+      .onChange((value) => {
+        // Update the stored original value when GUI changes
+        material.userData.originalAmplitude = value;
+      });
     shaderFolder.add(material.uniforms.size, "value", 0, 10).name("Size");
     shaderFolder
       .add(material.uniforms.offsetSize, "value", 0, 10)
@@ -369,9 +399,9 @@ const AudioVisualizer = ({ audioRef, isPlaying }) => {
       .name("Enable Background Sampling")
       .onChange((value) => {
         if (!value) {
-          // Reset to original Red Bull colors
-          material.uniforms.startColor.value.setHex(0xe21b4d);
-          material.uniforms.endColor.value.setHex(0x004c6c);
+          // Reset to white colors
+          material.uniforms.startColor.value.setHex(0xffffff);
+          material.uniforms.endColor.value.setHex(0xcccccc);
         }
       });
     colorFolder
@@ -422,9 +452,9 @@ const AudioVisualizer = ({ audioRef, isPlaying }) => {
           bottomColor[2]
         );
 
-        // Apply intensity factor and mix with original Red Bull colors
-        const originalStart = 0xe21b4d;
-        const originalEnd = 0x004c6c;
+        // Apply intensity factor and mix with original white colors
+        const originalStart = 0xffffff;
+        const originalEnd = 0xcccccc;
         const intensity = colorSamplingRef.current.intensity;
 
         // Blend sampled colors with original colors
@@ -471,6 +501,45 @@ const AudioVisualizer = ({ audioRef, isPlaying }) => {
 
     // Animation loop
     const animate = () => {
+      // Check for active sound event animation
+      let eventIntensity = 0;
+      let eventColors = { start: 0xffffff, end: 0xcccccc };
+
+      if (eventAnimationRef.current.isActive) {
+        const elapsed = Date.now() - eventAnimationRef.current.startTime;
+        const progress = Math.min(
+          elapsed / eventAnimationRef.current.duration,
+          1
+        );
+
+        if (progress >= 1) {
+          // Animation finished
+          eventAnimationRef.current.isActive = false;
+          rotationBoostRef.current = 0; // Reset rotation boost
+        } else {
+          // Calculate animation intensity (fade in/out)
+          const fadeInOut =
+            progress < 0.3 ? progress / 0.3 : 1 - (progress - 0.3) / 0.7;
+          eventIntensity = fadeInOut;
+
+          // Set colors and rotation boost based on event type
+          switch (eventAnimationRef.current.type) {
+            case "wrong":
+              eventColors = { start: 0xff0000, end: 0x800000 }; // Red colors
+              rotationBoostRef.current = eventIntensity * 2; // Much faster rotation (10x boost)
+              break;
+            case "correct":
+              eventColors = { start: 0xffff00, end: 0x808000 }; // Yellow colors
+              rotationBoostRef.current = eventIntensity * 2; // Much faster rotation (10x boost)
+              break;
+            case "pass":
+              // No color effects for pass, but add rotation boost
+              rotationBoostRef.current = eventIntensity * 2; // Same fast rotation as correct/wrong
+              break;
+          }
+        }
+      }
+
       // Audio reactive updates (check current playing state)
       if (analyserRef.current && dataArrayRef.current) {
         try {
@@ -486,34 +555,147 @@ const AudioVisualizer = ({ audioRef, isPlaying }) => {
           // Only use audio data if there's actual signal (audio is playing)
           if (average > 0) {
             const intensity = average / 255;
-            // Update shader uniforms based on audio
-            material.uniforms.amplitude.value = 0.8 + intensity * 2;
-            material.uniforms.frequency.value = 2 + intensity * 3;
+            // Add audio reactivity to the current GUI slider values (don't override them)
+            const currentAmplitude = material.uniforms.amplitude.value;
+            const currentFrequency = material.uniforms.frequency.value;
+
+            // Store original values if not already stored
+            if (!material.userData.originalAmplitude) {
+              material.userData.originalAmplitude = currentAmplitude;
+              material.userData.originalFrequency = currentFrequency;
+            }
+
+            // Apply event enhancement only for correct/wrong, not pass
+            const eventBoost =
+              eventAnimationRef.current.type === "pass"
+                ? 0
+                : eventIntensity * 2;
+            const eventFreqBoost =
+              eventAnimationRef.current.type === "pass"
+                ? 0
+                : eventIntensity * 3;
+
+            material.uniforms.amplitude.value =
+              material.userData.originalAmplitude +
+              intensity * 0.5 +
+              eventBoost;
+            material.uniforms.frequency.value =
+              material.userData.originalFrequency +
+              intensity * 1.5 +
+              eventFreqBoost;
           } else {
-            // Fallback animation when no audio signal - use baseline values
-            material.uniforms.amplitude.value = 0.8;
-            material.uniforms.frequency.value = 2;
+            // When no audio, return to GUI slider values with event enhancement only
+            if (material.userData.originalAmplitude !== undefined) {
+              const eventBoost =
+                eventAnimationRef.current.type === "pass"
+                  ? 0
+                  : eventIntensity * 2;
+              const eventFreqBoost =
+                eventAnimationRef.current.type === "pass"
+                  ? 0
+                  : eventIntensity * 3;
+
+              material.uniforms.amplitude.value =
+                material.userData.originalAmplitude + eventBoost;
+              material.uniforms.frequency.value =
+                material.userData.originalFrequency + eventFreqBoost;
+            }
           }
         } catch (error) {
-          // If audio context isn't ready or available, use baseline values
-          material.uniforms.amplitude.value = 0.8;
-          material.uniforms.frequency.value = 2;
+          // If audio context isn't ready or available, use GUI values with event enhancement
+          if (material.userData.originalAmplitude !== undefined) {
+            const eventBoost =
+              eventAnimationRef.current.type === "pass"
+                ? 0
+                : eventIntensity * 2;
+            const eventFreqBoost =
+              eventAnimationRef.current.type === "pass"
+                ? 0
+                : eventIntensity * 3;
+
+            material.uniforms.amplitude.value =
+              material.userData.originalAmplitude + eventBoost;
+            material.uniforms.frequency.value =
+              material.userData.originalFrequency + eventFreqBoost;
+          } else {
+            // Fallback to default values
+            const eventBoost =
+              eventAnimationRef.current.type === "pass"
+                ? 0
+                : eventIntensity * 2;
+            const eventFreqBoost =
+              eventAnimationRef.current.type === "pass"
+                ? 0
+                : eventIntensity * 3;
+
+            material.uniforms.amplitude.value = 0.2 + eventBoost;
+            material.uniforms.frequency.value = 0.5 + eventFreqBoost;
+          }
         }
       } else {
-        // Fallback animation when no analyser - use baseline values
-        material.uniforms.amplitude.value = 0.8;
-        material.uniforms.frequency.value = 2;
+        // Fallback animation when no analyser - use GUI values with event enhancement
+        if (material.userData.originalAmplitude !== undefined) {
+          const eventBoost =
+            eventAnimationRef.current.type === "pass" ? 0 : eventIntensity * 2;
+          const eventFreqBoost =
+            eventAnimationRef.current.type === "pass" ? 0 : eventIntensity * 3;
+
+          material.uniforms.amplitude.value =
+            material.userData.originalAmplitude + eventBoost;
+          material.uniforms.frequency.value =
+            material.userData.originalFrequency + eventFreqBoost;
+        } else {
+          // Fallback to default values
+          const eventBoost =
+            eventAnimationRef.current.type === "pass" ? 0 : eventIntensity * 2;
+          const eventFreqBoost =
+            eventAnimationRef.current.type === "pass" ? 0 : eventIntensity * 3;
+
+          material.uniforms.amplitude.value = 0.2 + eventBoost;
+          material.uniforms.frequency.value = 0.5 + eventFreqBoost;
+        }
       }
 
-      // Auto rotation (always continue)
+      // Auto rotation (always continue) with event boost
       if (guiPropertiesRef.current?.autoRotate) {
-        holder.rotation.x += guiPropertiesRef.current.rotationSpeed.x;
-        holder.rotation.y += guiPropertiesRef.current.rotationSpeed.y;
+        const rotationMultiplier = 1 + rotationBoostRef.current * 10; // Amplify the boost effect
+        holder.rotation.x +=
+          guiPropertiesRef.current.rotationSpeed.x * rotationMultiplier;
+        holder.rotation.y +=
+          guiPropertiesRef.current.rotationSpeed.y * rotationMultiplier;
       }
 
       // Sample background colors (every few frames for performance)
       if (timeRef.current % 0.5 < 0.1) {
         sampleBackgroundColors();
+      }
+
+      // Apply event colors if active and not a pass event, otherwise use default colors
+      if (
+        eventAnimationRef.current.isActive &&
+        eventIntensity > 0 &&
+        eventAnimationRef.current.type !== "pass"
+      ) {
+        // Blend event colors with current colors
+        const currentStart = material.uniforms.startColor.value;
+        const currentEnd = material.uniforms.endColor.value;
+
+        // Create target colors
+        const targetStart = new THREE.Color(eventColors.start);
+        const targetEnd = new THREE.Color(eventColors.end);
+
+        // Lerp between current and target colors based on event intensity
+        material.uniforms.startColor.value.lerp(
+          targetStart,
+          eventIntensity * 0.8
+        );
+        material.uniforms.endColor.value.lerp(targetEnd, eventIntensity * 0.8);
+      } else if (!colorSamplingRef.current.enabled) {
+        // Return to default white colors when no event is active and no background sampling
+        const defaultStart = new THREE.Color(0xffffff);
+        const defaultEnd = new THREE.Color(0xcccccc);
+        material.uniforms.startColor.value.lerp(defaultStart, 0.1);
+        material.uniforms.endColor.value.lerp(defaultEnd, 0.1);
       }
 
       // Update time (always continue)
@@ -578,6 +760,23 @@ const AudioVisualizer = ({ audioRef, isPlaying }) => {
     setupAudioContext();
   }, [isPlaying, audioRef]);
 
+  // Handle sound events
+  useEffect(() => {
+    if (soundEvent && soundEvent !== soundEventRef.current) {
+      soundEventRef.current = soundEvent;
+
+      // Trigger visual reaction based on sound event type
+      eventAnimationRef.current = {
+        isActive: true,
+        startTime: Date.now(),
+        duration: soundEvent.type === "wrong" ? 1500 : 1000, // Longer duration for wrong
+        type: soundEvent.type,
+      };
+
+      console.log("Sound event triggered:", soundEvent);
+    }
+  }, [soundEvent]);
+
   useEffect(() => {
     return () => {
       if (audioContextRef.current) {
@@ -588,13 +787,18 @@ const AudioVisualizer = ({ audioRef, isPlaying }) => {
 
   return (
     <div className="flex items-center justify-center w-full h-screen bg-transparent">
+      {/* Dark overlay to make visualizer more prominent */}
+      <div
+        className="absolute inset-0 bg-black bg-opacity-40"
+        style={{ zIndex: 5 }}
+      />
       {/* Three.js Mount Point */}
       <div
         ref={mountRef}
         style={{
           zIndex: 10,
-          width: "800px",
-          height: "600px",
+          width: "1080px",
+          height: "1080px",
         }}
       />
     </div>
