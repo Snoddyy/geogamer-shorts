@@ -103,14 +103,22 @@ vec3 curl(float x,float y,float z) {
 
 void main() {
   vec3 newpos = position;
-  vec3 target = position + (normal*.1) + curl(newpos.x * frequency, newpos.y * frequency, newpos.z * frequency) * amplitude;
+  vec3 displacement = curl(newpos.x * frequency, newpos.y * frequency, newpos.z * frequency) * amplitude;
+  
+  // Limit displacement to maintain cube shape
+  float maxDisplacement = 0.3; // Prevent extreme deformation
+  displacement = clamp(displacement, -maxDisplacement, maxDisplacement);
+  
+  vec3 target = position + (normal * 0.1) + displacement;
   
   float d = length(newpos - target) / maxDistance;
-  newpos = mix(position, target, pow(d, 4.));
-  newpos.z += sin(time) * (.1 * offsetGain);
+  d = clamp(d, 0.0, 1.0); // Ensure d stays within bounds
+  
+  newpos = mix(position, target, pow(d, 2.)); // Reduced power for smoother blending
+  newpos.z += sin(time) * (0.05 * offsetGain); // Reduced Z oscillation
   
   vec4 mvPosition = modelViewMatrix * vec4(newpos, 1.);
-  gl_PointSize = size + (pow(d,3.) * offsetSize) * (1./-mvPosition.z);
+  gl_PointSize = size + (pow(d,2.) * offsetSize) * (1./-mvPosition.z); // Reduced power
   gl_Position = projectionMatrix * mvPosition;
   
   vDistance = d;
@@ -122,6 +130,7 @@ varying float vDistance;
 
 uniform vec3 startColor;
 uniform vec3 endColor;
+uniform float glowIntensity;
 
 float circle(in vec2 _st,in float _radius){
   vec2 dist=_st-vec2(.5);
@@ -136,11 +145,14 @@ void main(){
 
   vec3 color = mix(startColor,endColor,vDistance);
   
-  // Enhanced glow effect for white particles
-  float glow = circ.r * (1.0 + vDistance * 0.5);
+  // Enhanced glow effect controlled by glowIntensity uniform
+  float glow = circ.r * (1.0 + vDistance * 0.5) * glowIntensity;
   float alpha = glow * (0.8 + vDistance * 0.4);
   
-  gl_FragColor=vec4(color * (1.0 + glow * 0.3), alpha);
+  // Boost color brightness based on glow intensity
+  vec3 finalColor = color * (1.0 + glow * glowIntensity);
+  
+  gl_FragColor=vec4(finalColor, alpha);
 }
 `;
 
@@ -161,6 +173,7 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
   const geometryRef = useRef(null);
   const guiRef = useRef(null);
   const timeRef = useRef(0);
+  // Removed lighting refs since they don't affect background video
 
   // Color sampling refs
   const canvasRef = useRef(null);
@@ -203,6 +216,8 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
     const scene = new THREE.Scene();
     scene.add(camera);
 
+    // Removed lighting setup since it doesn't affect the background video
+
     const holder = new THREE.Object3D();
     holder.sortObjects = false;
     scene.add(holder);
@@ -234,20 +249,21 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
       uniforms: {
         time: { value: 0 },
         offsetSize: { value: 2.5 },
-        size: { value: 0 },
-        frequency: { value: 0.5 }, // Low frequency for smooth, controlled movement
+        size: { value: 2 }, // Updated default size
+        frequency: { value: 2.5 }, // Updated default frequency
         amplitude: { value: 0.2 }, // Moderate amplitude for visible but controlled displacement
         offsetGain: { value: 0.1 }, // Slight Z oscillation for depth
         maxDistance: { value: 0.4 }, // Lower value for more visible displacement
         startColor: { value: new THREE.Color(0xffffff) }, // Pure white
         endColor: { value: new THREE.Color(0xcccccc) }, // Light gray for subtle variation
+        glowIntensity: { value: 1.0 }, // Default glow intensity
       },
     });
 
     // Initialize userData to store original GUI values
     material.userData = {
       originalAmplitude: 0.2,
-      originalFrequency: 0.5,
+      originalFrequency: 4, // Updated to match new default
     };
 
     materialRef.current = material;
@@ -391,6 +407,10 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
     shaderFolder
       .add(material.uniforms.maxDistance, "value", 0, 5)
       .name("Max Distance");
+    shaderFolder
+      .add(material.uniforms.glowIntensity, "value", 0, 10)
+      .step(0.1)
+      .name("Glow Intensity");
 
     // Color sampling controls
     const colorFolder = gui.addFolder("Background Colors");
@@ -513,9 +533,10 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
         );
 
         if (progress >= 1) {
-          // Animation finished
+          // Animation finished - ensure clean reset
           eventAnimationRef.current.isActive = false;
           rotationBoostRef.current = 0; // Reset rotation boost
+          eventAnimationRef.current.type = null; // Clear event type
         } else {
           // Calculate animation intensity (fade in/out)
           const fadeInOut =
@@ -538,6 +559,10 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
               break;
           }
         }
+      } else {
+        // No active event - ensure clean reset
+        rotationBoostRef.current = 0;
+        eventIntensity = 0;
       }
 
       // Audio reactive updates (check current playing state)
@@ -555,6 +580,8 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
           // Only use audio data if there's actual signal (audio is playing)
           if (average > 0) {
             const intensity = average / 255;
+
+            // Removed lighting code since it doesn't affect background video
             // Add audio reactivity to the current GUI slider values (don't override them)
             const currentAmplitude = material.uniforms.amplitude.value;
             const currentFrequency = material.uniforms.frequency.value;
@@ -569,20 +596,25 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
             const eventBoost =
               eventAnimationRef.current.type === "pass"
                 ? 0
-                : eventIntensity * 2;
+                : eventIntensity * 1.5; // Reduced from 2
             const eventFreqBoost =
               eventAnimationRef.current.type === "pass"
                 ? 0
-                : eventIntensity * 3;
+                : eventIntensity * 2; // Reduced from 3
 
-            material.uniforms.amplitude.value =
+            // Clamp final values to prevent extreme deformation
+            material.uniforms.amplitude.value = Math.min(
               material.userData.originalAmplitude +
-              intensity * 0.5 +
-              eventBoost;
-            material.uniforms.frequency.value =
+                intensity * 0.4 +
+                eventBoost, // Reduced audio multiplier
+              0.8 // Maximum amplitude cap
+            );
+            material.uniforms.frequency.value = Math.min(
               material.userData.originalFrequency +
-              intensity * 1.5 +
-              eventFreqBoost;
+                intensity * 1.2 +
+                eventFreqBoost, // Reduced audio multiplier
+              4.0 // Maximum frequency cap
+            );
           } else {
             // When no audio, return to GUI slider values with event enhancement only
             if (material.userData.originalAmplitude !== undefined) {
@@ -629,7 +661,7 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
                 : eventIntensity * 3;
 
             material.uniforms.amplitude.value = 0.2 + eventBoost;
-            material.uniforms.frequency.value = 0.5 + eventFreqBoost;
+            material.uniforms.frequency.value = 4 + eventFreqBoost; // Updated default
           }
         }
       } else {
@@ -652,17 +684,27 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
             eventAnimationRef.current.type === "pass" ? 0 : eventIntensity * 3;
 
           material.uniforms.amplitude.value = 0.2 + eventBoost;
-          material.uniforms.frequency.value = 0.5 + eventFreqBoost;
+          material.uniforms.frequency.value = 4 + eventFreqBoost; // Updated default
         }
       }
 
       // Auto rotation (always continue) with event boost
       if (guiPropertiesRef.current?.autoRotate) {
-        const rotationMultiplier = 1 + rotationBoostRef.current * 10; // Amplify the boost effect
-        holder.rotation.x +=
+        const rotationMultiplier = Math.min(
+          1 + rotationBoostRef.current * 10,
+          5
+        ); // Cap at 5x max speed
+        const deltaX =
           guiPropertiesRef.current.rotationSpeed.x * rotationMultiplier;
-        holder.rotation.y +=
+        const deltaY =
           guiPropertiesRef.current.rotationSpeed.y * rotationMultiplier;
+
+        holder.rotation.x += deltaX;
+        holder.rotation.y += deltaY;
+
+        // Normalize rotation to prevent accumulation issues
+        holder.rotation.x = holder.rotation.x % (Math.PI * 2);
+        holder.rotation.y = holder.rotation.y % (Math.PI * 2);
       }
 
       // Sample background colors (every few frames for performance)
@@ -690,12 +732,16 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
           eventIntensity * 0.8
         );
         material.uniforms.endColor.value.lerp(targetEnd, eventIntensity * 0.8);
+
+        // Removed lighting code since it doesn't affect background video
       } else if (!colorSamplingRef.current.enabled) {
         // Return to default white colors when no event is active and no background sampling
         const defaultStart = new THREE.Color(0xffffff);
         const defaultEnd = new THREE.Color(0xcccccc);
         material.uniforms.startColor.value.lerp(defaultStart, 0.1);
         material.uniforms.endColor.value.lerp(defaultEnd, 0.1);
+
+        // Removed lighting code since it doesn't affect background video
       }
 
       // Update time (always continue)
@@ -728,6 +774,7 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
       if (material) {
         material.dispose();
       }
+      // Removed lighting cleanup since we removed the lighting system
       if (renderer && mountRef.current) {
         mountRef.current.removeChild(renderer.domElement);
         renderer.dispose();
@@ -765,6 +812,9 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
     if (soundEvent && soundEvent !== soundEventRef.current) {
       soundEventRef.current = soundEvent;
 
+      // Reset any existing event to prevent overlap/accumulation
+      rotationBoostRef.current = 0;
+
       // Trigger visual reaction based on sound event type
       eventAnimationRef.current = {
         isActive: true,
@@ -787,11 +837,6 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
 
   return (
     <div className="flex items-center justify-center w-full h-screen bg-transparent">
-      {/* Dark overlay to make visualizer more prominent */}
-      <div
-        className="absolute inset-0 bg-black bg-opacity-40"
-        style={{ zIndex: 5 }}
-      />
       {/* Three.js Mount Point */}
       <div
         ref={mountRef}

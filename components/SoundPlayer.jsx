@@ -43,25 +43,30 @@ const SoundPlayer = () => {
 
   const [videoUrl, setVideoUrl] = useState(initialVideoUrl);
 
-  // Sound design effects
+  // Sound design effects with reduced volume (80% reduction)
   const [playTimerStart] = useSound(
-    soundDesign.find((sound) => sound.id === "timerStart").url
+    soundDesign.find((sound) => sound.id === "timerStart").url,
+    { volume: 0.2 }
   );
   const [playAmbiance, { stop: stopAmbiance }] = useSound(
     soundDesign.find((sound) => sound.id === "ambiance").url,
-    { loop: true }
+    { loop: true, volume: 0.2 }
   );
   const [playPass] = useSound(
-    soundDesign.find((sound) => sound.id === "pass").url
+    soundDesign.find((sound) => sound.id === "pass").url,
+    { volume: 0.2 }
   );
   const [playCorrect] = useSound(
-    soundDesign.find((sound) => sound.id === "correct").url
+    soundDesign.find((sound) => sound.id === "correct").url,
+    { volume: 0.2 }
   );
   const [playRules] = useSound(
-    soundDesign.find((sound) => sound.id === "rules").url
+    soundDesign.find((sound) => sound.id === "rules").url,
+    { volume: 0.2 }
   );
   const [playWrong] = useSound(
-    soundDesign.find((sound) => sound.id === "wrong").url
+    soundDesign.find((sound) => sound.id === "wrong").url,
+    { volume: 0.2 }
   );
 
   // Game state
@@ -500,6 +505,7 @@ const SoundPlayer = () => {
           crossOrigin="anonymous"
           preload="auto"
           loop={false}
+          volume={0.2}
           onEnded={handleAudioEnded}
           onPause={handleAudioPause}
           onPlay={handleAudioPlay}
