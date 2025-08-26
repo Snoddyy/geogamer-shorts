@@ -99,9 +99,21 @@ const ImagePlayer = () => {
   );
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [roundHistory, setRoundHistory] = useState(
-    Array(selectedPlaylist.length).fill(0)
-  );
+  const [roundHistory, setRoundHistory] = useState(() => {
+    console.log(
+      "ImagePlayer - Initializing roundHistory with length:",
+      selectedPlaylist.length
+    );
+    return Array(selectedPlaylist.length).fill(0);
+  });
+
+  // Use a ref to persist round history across re-renders
+  const roundHistoryRef = useRef(roundHistory);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    roundHistoryRef.current = roundHistory;
+  }, [roundHistory]);
   const [showRulesVideo, setShowRulesVideo] = useState(true);
   const [showBlendedVideo, setShowBlendedVideo] = useState(false);
   const [showTimerStartVideo, setShowTimerStartVideo] = useState(false);
@@ -112,13 +124,58 @@ const ImagePlayer = () => {
   // Add timerKey state to force Timer to persist
   const [timerKey] = useState("persistent-timer");
 
-  const handleTimerEnd = () => {
+  // Add component instance ID for debugging
+  const [componentId] = useState(() => Math.random().toString(36).substr(2, 9));
+
+  // Helper function to determine if timer should be shown
+  const shouldShowTimer = useCallback(() => {
+    if (
+      selectedPlaylist.length === 0 ||
+      currentIndex >= selectedPlaylist.length
+    ) {
+      return false;
+    }
+
+    // Get the URL of the current image
+    const currentImage = processedPlaylist[currentIndex];
+    const currentImageUrl =
+      typeof currentImage === "object" && currentImage.url
+        ? currentImage.url
+        : currentImage;
+
+    // Check if this image belongs to Stanley (id: 4) or DS3-ER (id: 3)
+    for (const location of locations) {
+      if (location.id === 3 || location.id === 4) {
+        // DS3-ER or Stanley
+        const isFromTimerlessLocation = location.images.some((img) =>
+          typeof img === "object"
+            ? img.url === currentImageUrl
+            : img === currentImageUrl
+        );
+
+        if (isFromTimerlessLocation) {
+          return false; // Don't show timer for Stanley or DS3-ER
+        }
+      }
+    }
+
+    return true; // Show timer for all other locations
+  }, [currentIndex, processedPlaylist, selectedPlaylist.length]);
+
+  const handleTimerEnd = useCallback(() => {
     // Only handle timer end if we're using a timer for this location
     if (shouldShowTimer()) {
-      const score = roundHistory.filter((value) => value === 1).length;
+      const currentRoundHistory = roundHistoryRef.current;
+      const score = currentRoundHistory.filter((value) => value === 1).length;
+      console.log(
+        "Timer ended - Final score:",
+        score,
+        "out of",
+        selectedPlaylist.length
+      );
       router.push(`/score?score=${score}&total=${selectedPlaylist.length}`);
     }
-  };
+  }, [roundHistory, selectedPlaylist.length, router, shouldShowTimer]);
 
   const handleNextImage = useCallback(() => {
     setDestroyingViewer(true);
@@ -337,41 +394,6 @@ const ImagePlayer = () => {
     return { url: imageUrl };
   }, []);
 
-  // Add a helper function to determine if timer should be shown
-  const shouldShowTimer = useCallback(() => {
-    if (
-      selectedPlaylist.length === 0 ||
-      currentIndex >= selectedPlaylist.length
-    ) {
-      return false;
-    }
-
-    // Get the URL of the current image
-    const currentImage = processedPlaylist[currentIndex];
-    const currentImageUrl =
-      typeof currentImage === "object" && currentImage.url
-        ? currentImage.url
-        : currentImage;
-
-    // Check if this image belongs to Stanley (id: 4) or DS3-ER (id: 3)
-    for (const location of locations) {
-      if (location.id === 3 || location.id === 4) {
-        // DS3-ER or Stanley
-        const isFromTimerlessLocation = location.images.some((img) =>
-          typeof img === "object"
-            ? img.url === currentImageUrl
-            : img === currentImageUrl
-        );
-
-        if (isFromTimerlessLocation) {
-          return false; // Don't show timer for Stanley or DS3-ER
-        }
-      }
-    }
-
-    return true; // Show timer for all other locations
-  }, [currentIndex, processedPlaylist, selectedPlaylist.length]);
-
   return (
     <div className="relative flex content-center justify-center cursor-custom-move">
       {showRulesVideo && (
@@ -413,7 +435,7 @@ const ImagePlayer = () => {
       {gameStarted && shouldShowTimer() && (
         <Timer
           key={timerKey}
-          duration={60}
+          duration={20}
           roundHistory={roundHistory}
           onTimerEnd={handleTimerEnd}
         />

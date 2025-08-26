@@ -3,6 +3,9 @@ import { database, ref, onValue, set, push } from "./firebaseConfig";
 // Global state value for selected rule type
 let currentRuleType = "classic"; // default rule type
 
+// Global state for audio playing status
+let isAudioPlaying = false;
+
 // Replace direct localStorage access with a browser-safe check
 let lastProcessedTimestamp = "";
 if (typeof window !== "undefined") {
@@ -23,6 +26,30 @@ export const setRuleType = (ruleType) => {
 // Get current rule type
 export const getCurrentRuleType = () => {
   return currentRuleType;
+};
+
+// Set audio playing state
+export const setAudioPlayingState = (playing) => {
+  isAudioPlaying = playing;
+  const audioStateRef = ref(database, "globalState/audioPlaying");
+  set(audioStateRef, playing);
+};
+
+// Get current audio playing state
+export const getAudioPlayingState = () => {
+  return isAudioPlaying;
+};
+
+// Listen for audio state changes
+export const listenToAudioState = (callback) => {
+  const audioStateRef = ref(database, "globalState/audioPlaying");
+  return onValue(audioStateRef, (snapshot) => {
+    const playing = snapshot.val();
+    if (playing !== null) {
+      isAudioPlaying = playing;
+      callback(playing);
+    }
+  });
 };
 
 // Send global command to all players

@@ -2,9 +2,11 @@
 "use client";
 import { images } from "@/components/images";
 import { locations } from "@/components/locations";
+import { sounds } from "@/components/sounds";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import Link from "next/link";
 
 const PlaylistSelection = () => {
   const router = useRouter();
@@ -46,38 +48,153 @@ const PlaylistSelection = () => {
           )}&playlistType=image&t=${timestamp}`
         );
       }
+    } else if (playlistType === "sound") {
+      const selectedPlaylist = sounds.find(
+        (playlist) => playlist.id === playlistId
+      );
+      if (selectedPlaylist) {
+        router.push(
+          `/player?playlist=${JSON.stringify(
+            selectedPlaylist.sounds
+          )}&playlistType=sound&t=${timestamp}`
+        );
+      }
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <h1 className="mb-6 text-3xl ">Select a Playlist</h1>
-      <div className="flex space-x-4">
-        <div className="flex flex-col items-center justify-start gap-4">
-          <h2 className="mb-2 text-xl ">Panorama</h2>
-          {locations.map((playlist) => (
-            <Button
-              key={playlist.id}
-              onClick={() => handlePlaylistSelection(playlist.id, "panorama")}
-              className="w-48 h-12 px-4 py-2"
-              variant="default"
-            >
-              {playlist.name}
-            </Button>
-          ))}
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header Section */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
+            Select a Playlist
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Choose your preferred content type to begin the game
+          </p>
         </div>
-        <div className="flex flex-col items-center justify-start gap-4">
-          <h2 className="mb-2 text-xl ">Images</h2>
-          {images.map((playlist) => (
-            <Button
-              key={playlist.id}
-              onClick={() => handlePlaylistSelection(playlist.id, "image")}
-              className="w-48 h-12 px-4 py-2"
-              variant="default"
-            >
-              {playlist.name}
-            </Button>
-          ))}
+
+        {/* Playlist Categories */}
+        <div className="grid gap-8 md:grid-cols-3">
+          {/* Panorama Section */}
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-blue-500 rounded-full mx-auto mb-3 flex items-center justify-center">
+                <span className="text-white text-xl">🌍</span>
+              </div>
+              <h2 className="text-xl font-semibold text-card-foreground mb-2">
+                Panorama
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                360° immersive experiences
+              </p>
+            </div>
+            <div className="space-y-3">
+              {locations.map((playlist) => (
+                <Button
+                  key={playlist.id}
+                  onClick={() =>
+                    handlePlaylistSelection(playlist.id, "panorama")
+                  }
+                  variant="outline"
+                  size="lg"
+                  className="w-full h-12 justify-start border-blue-200 hover:bg-blue-50/30 hover:border-blue-300/50 dark:border-blue-800 dark:hover:bg-blue-900/10"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-blue-500 rounded-md flex items-center justify-center">
+                      <span className="text-white text-xs">🗺️</span>
+                    </div>
+                    <span>{playlist.name}</span>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Images Section */}
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-purple-500 rounded-full mx-auto mb-3 flex items-center justify-center">
+                <span className="text-white text-xl">🖼️</span>
+              </div>
+              <h2 className="text-xl font-semibold text-card-foreground mb-2">
+                Images
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Visual geography challenges
+              </p>
+            </div>
+            <div className="space-y-3">
+              {images.map((playlist) => (
+                <Button
+                  key={playlist.id}
+                  onClick={() => handlePlaylistSelection(playlist.id, "image")}
+                  variant="outline"
+                  size="lg"
+                  className="w-full h-12 justify-start border-purple-200 hover:bg-purple-50/30 hover:border-purple-300/50 dark:border-purple-800 dark:hover:bg-purple-900/10"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-purple-500 rounded-md flex items-center justify-center">
+                      <span className="text-white text-xs">📸</span>
+                    </div>
+                    <span>{playlist.name}</span>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Sounds Section */}
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-amber-500 rounded-full mx-auto mb-3 flex items-center justify-center">
+                <span className="text-white text-xl">🔊</span>
+              </div>
+              <h2 className="text-xl font-semibold text-card-foreground mb-2">
+                Sounds
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Audio-based location guessing
+              </p>
+            </div>
+            <div className="space-y-3">
+              {sounds.map((playlist) => (
+                <Button
+                  key={playlist.id}
+                  onClick={() => handlePlaylistSelection(playlist.id, "sound")}
+                  variant="outline"
+                  size="lg"
+                  className="w-full h-12 justify-start border-amber-200 hover:bg-amber-50/30 hover:border-amber-300/50 dark:border-amber-800 dark:hover:bg-amber-900/10"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-amber-500 rounded-md flex items-center justify-center">
+                      <span className="text-white text-xs">🎵</span>
+                    </div>
+                    <span>{playlist.name}</span>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div className="mt-8 flex justify-center">
+          <div className="bg-card border border-border rounded-lg p-4 shadow-sm">
+            <Link href="/">
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-12 px-6 border-gray-200 hover:bg-gray-50/30 hover:border-gray-300/50 dark:border-gray-800 dark:hover:bg-gray-900/10"
+              >
+                <div className="flex items-center gap-2">
+                  <span>⬅️</span>
+                  <span>Back to Mode Selection</span>
+                </div>
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
