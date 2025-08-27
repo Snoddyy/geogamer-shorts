@@ -1,6 +1,13 @@
 "use client";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import {
+  EffectComposer,
+  EffectPass,
+  RenderPass,
+  BloomEffect,
+} from "postprocessing";
+
 import GUI from "lil-gui";
 
 // Import shaders as text
@@ -130,7 +137,6 @@ varying float vDistance;
 
 uniform vec3 startColor;
 uniform vec3 endColor;
-uniform float glowIntensity;
 
 float circle(in vec2 _st,in float _radius){
   vec2 dist=_st-vec2(.5);
@@ -145,14 +151,14 @@ void main(){
 
   vec3 color = mix(startColor,endColor,vDistance);
   
-  // Enhanced glow effect controlled by glowIntensity uniform
-  float glow = circ.r * (1.0 + vDistance * 0.5) * glowIntensity;
-  float alpha = glow * (0.8 + vDistance * 0.4);
+  // Boost particle brightness to ensure bloom threshold is exceeded
+  // Extra boost for red colors (wrong answers) since they have lower luminance
+  float baseIntensity = 1.16; // Default cube intensity as requested
+  float redBoost = (color.r > 0.8 && color.g < 0.3 && color.b < 0.3) ? 4.0 : 3.0;
+  vec3 brightColor = color * baseIntensity * redBoost;
+  float alpha = circ.r * (0.8 + vDistance * 0.4);
   
-  // Boost color brightness based on glow intensity
-  vec3 finalColor = color * (1.0 + glow * glowIntensity);
-  
-  gl_FragColor=vec4(finalColor, alpha);
+  gl_FragColor=vec4(brightColor, alpha);
 }
 `;
 
@@ -173,12 +179,13 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
   const geometryRef = useRef(null);
   const guiRef = useRef(null);
   const timeRef = useRef(0);
+  const composerRef = useRef(null);
+  const bloomPassRef = useRef(null);
+  const backgroundMeshRef = useRef(null);
+
   // Removed lighting refs since they don't affect background video
 
-  // Color sampling refs
-  const canvasRef = useRef(null);
-  const contextRef = useRef(null);
-  const colorSamplingRef = useRef({ enabled: false, intensity: 0.7 }); // Disabled by default
+  // Background sampling removed - using default colors only
 
   // Sound event reaction refs
   const soundEventRef = useRef(null);
@@ -189,6 +196,17 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
     type: null,
   });
   const rotationBoostRef = useRef(0); // For rotation speed boost during events
+
+  // Random amplitude and intensity variation refs
+  const randomAmplitudeRef = useRef({
+    lastUpdate: 0,
+    interval: 533, // Much more frequent changes (average 0.53 seconds)
+    variation: 0.25, // Current random amplitude (start with base amplitude)
+    targetVariation: 0.25, // Target amplitude for smooth interpolation
+    intensityVariation: 1.12, // Current random intensity (start with base frequency)
+    targetIntensityVariation: 1.12, // Target intensity for smooth interpolation
+    lerpSpeed: 0.05, // Smooth interpolation speed
+  });
 
   // GUI properties
   const guiPropertiesRef = useRef(null);
@@ -204,9 +222,9 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
       alpha: true,
     });
 
-    renderer.setClearColor(0x000000, 0);
+    renderer.setClearColor(0x000000, 1);
     renderer.setSize(1080, 1080);
-    renderer.autoClear = false;
+    renderer.autoClear = true;
     mountRef.current.appendChild(renderer.domElement);
 
     const camera = new THREE.PerspectiveCamera(70, 1080 / 1080, 0.1, 10000);
@@ -216,7 +234,118 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
     const scene = new THREE.Scene();
     scene.add(camera);
 
-    // Removed lighting setup since it doesn't affect the background video
+    // Setup layers for selective bloom
+    const BLOOM_LAYER = 1;
+    camera.layers.enable(BLOOM_LAYER);
+
+    // Create video texture background using direct URL with optimization
+    const videoElement = document.createElement("video");
+    videoElement.src =
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/gg_shorts_loop_bg_sound.webm";
+    videoElement.crossOrigin = "anonymous";
+    videoElement.loop = true;
+    videoElement.muted = true;
+    videoElement.playsInline = true;
+    videoElement.autoplay = true;
+    videoElement.preload = "auto"; // Preload video for smoother playback
+
+    // Additional performance optimizations
+    videoElement.playbackRate = 1.0; // Ensure normal playback speed
+    videoElement.defaultMuted = true; // Ensure muted for autoplay
+
+    // Optimize video element for performance and quality
+    videoElement.style.objectFit = "cover";
+    videoElement.width = 1080;
+    videoElement.height = 1080;
+
+    // Prevent video processing that might add filters
+    videoElement.style.filter = "none";
+    videoElement.style.imageRendering = "optimizeQuality";
+
+    const videoTexture = new THREE.VideoTexture(videoElement);
+    // Optimize texture settings for high-quality video
+    videoTexture.minFilter = THREE.LinearFilter;
+    videoTexture.magFilter = THREE.LinearFilter;
+    videoTexture.format = THREE.RGBFormat;
+    videoTexture.type = THREE.UnsignedByteType;
+    videoTexture.generateMipmaps = false; // Disable mipmaps for better performance
+    videoTexture.flipY = false; // Prevent unnecessary flipping
+    videoTexture.wrapS = THREE.ClampToEdgeWrapping;
+    videoTexture.wrapT = THREE.ClampToEdgeWrapping;
+    videoTexture.colorSpace = THREE.SRGBColorSpace; // Correct color space for video
+    videoTexture.premultiplyAlpha = false; // Prevent alpha premultiplication issues
+
+    // Ensure video starts playing and texture updates
+    const startVideo = () => {
+      videoElement.play().catch(console.warn);
+      videoTexture.needsUpdate = true;
+    };
+
+    // Start video when it's loaded
+    if (videoElement.readyState >= 2) {
+      startVideo();
+    } else {
+      videoElement.addEventListener("canplay", startVideo, { once: true });
+    }
+
+    // Create background plane that fills the full 1080x1080 canvas
+    // Use a larger plane to ensure complete coverage
+    const backgroundGeometry = new THREE.PlaneGeometry(20, 20); // Much larger to guarantee full coverage
+    const backgroundMaterial = new THREE.MeshBasicMaterial({
+      map: videoTexture,
+      depthTest: false,
+      depthWrite: false,
+      transparent: false, // Video is opaque
+      alphaTest: 0, // No alpha testing needed
+      side: THREE.FrontSide, // Only render front face
+      toneMapped: false, // Prevent tone mapping that might cause white filter
+    });
+
+    const backgroundMesh = new THREE.Mesh(
+      backgroundGeometry,
+      backgroundMaterial
+    );
+    backgroundMesh.position.z = -10; // Place further back to avoid clipping
+    scene.add(backgroundMesh); // Background stays dark, won't bloom
+    backgroundMeshRef.current = backgroundMesh;
+
+    // Setup post-processing with pmndrs/postprocessing library
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+
+    // Create BloomEffect with selective layer rendering
+    const bloomEffect = new BloomEffect({
+      intensity: 0.6, // Default glow intensity as requested
+      radius: 5, // Large radius (may not work without mipmapBlur)
+      luminanceThreshold: 0.6, // Lower threshold to include more particles in bloom
+      luminanceSmoothing: 0.3, // Higher smoothing for more diffuse effect
+      mipmapBlur: false, // Keep false as requested
+      resolutionScale: 1.0, // Full resolution for maximum quality
+    });
+
+    // Configure selective bloom using EffectPass selection
+    // Note: Selection is handled at the EffectPass level, not BloomEffect level
+
+    // Add bloom effect via EffectPass for better performance
+    const effectPass = new EffectPass(camera, bloomEffect);
+
+    // Try to configure selective bloom if the API supports it
+    try {
+      if (effectPass.selection && effectPass.selection.set) {
+        effectPass.selection.set([BLOOM_LAYER]);
+      } else if (bloomEffect.selection && bloomEffect.selection.set) {
+        bloomEffect.selection.set([BLOOM_LAYER]);
+      }
+    } catch (error) {
+      console.warn(
+        "Selective bloom not available in this version, using threshold-based approach"
+      );
+    }
+
+    composer.addPass(effectPass);
+
+    composerRef.current = composer;
+    bloomPassRef.current = bloomEffect;
 
     const holder = new THREE.Object3D();
     holder.sortObjects = false;
@@ -227,14 +356,6 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
     sceneRef.current = scene;
     cameraRef.current = camera;
     holderRef.current = holder;
-
-    // Setup color sampling canvas
-    const canvas = document.createElement("canvas");
-    canvas.width = 100;
-    canvas.height = 100;
-    const context = canvas.getContext("2d");
-    canvasRef.current = canvas;
-    contextRef.current = context;
 
     // Setup GUI
     const gui = new GUI();
@@ -248,31 +369,32 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
       transparent: true,
       uniforms: {
         time: { value: 0 },
-        offsetSize: { value: 2.5 },
-        size: { value: 2 }, // Updated default size
-        frequency: { value: 2.5 }, // Updated default frequency
-        amplitude: { value: 0.2 }, // Moderate amplitude for visible but controlled displacement
-        offsetGain: { value: 0.1 }, // Slight Z oscillation for depth
-        maxDistance: { value: 0.4 }, // Lower value for more visible displacement
+        offsetSize: { value: 2.5 }, // Offset Size from GUI
+        size: { value: 2.38 }, // Size from GUI
+        baseSize: { value: 2.38 }, // Store original size for sinusoidal variation
+        frequency: { value: 1.12 }, // Frequency from GUI
+        amplitude: { value: 0.25 }, // Amplitude from GUI
+        offsetGain: { value: 0 }, // Offset Gain from GUI
+        maxDistance: { value: 0.82 }, // Max Distance from GUI
         startColor: { value: new THREE.Color(0xffffff) }, // Pure white
         endColor: { value: new THREE.Color(0xcccccc) }, // Light gray for subtle variation
-        glowIntensity: { value: 1.0 }, // Default glow intensity
       },
     });
 
     // Initialize userData to store original GUI values
     material.userData = {
-      originalAmplitude: 0.2,
-      originalFrequency: 4, // Updated to match new default
+      originalAmplitude: 0.25, // Match GUI default
+      originalFrequency: 1.12, // Match GUI default
+      originalMaxDistance: 0.82, // Match GUI default
     };
 
     materialRef.current = material;
 
     // Create cube function
     const createCube = () => {
-      let widthSeg = 80; // Default to 80 instead of random
-      let heightSeg = 80; // Default to 80 instead of random
-      let depthSeg = 80; // Default to 80 instead of random
+      let widthSeg = 30;
+      let heightSeg = 30;
+      let depthSeg = 30;
 
       if (geometryRef.current) {
         geometryRef.current.dispose();
@@ -282,9 +404,9 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
       }
 
       const geometry = new THREE.BoxGeometry(
-        1,
-        1,
-        1,
+        1.2, // 20% bigger width
+        1.2, // 20% bigger height
+        1.2, // 20% bigger depth
         widthSeg,
         heightSeg,
         depthSeg
@@ -292,6 +414,7 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
       geometryRef.current = geometry;
 
       const pointsMesh = new THREE.Points(geometry, material);
+      pointsMesh.layers.enable(BLOOM_LAYER); // Add particles to bloom layer
       pointsMeshRef.current = pointsMesh;
       holder.add(pointsMesh);
 
@@ -331,9 +454,9 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
         }
 
         const newGeometry = new THREE.BoxGeometry(
-          1,
-          1,
-          1,
+          1.2, // 20% bigger width
+          1.2, // 20% bigger height
+          1.2, // 20% bigger depth
           guiPropertiesRef.current.segments.width,
           guiPropertiesRef.current.segments.height,
           guiPropertiesRef.current.segments.depth
@@ -341,6 +464,7 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
         geometryRef.current = newGeometry;
 
         const newPointsMesh = new THREE.Points(newGeometry, material);
+        newPointsMesh.layers.enable(BLOOM_LAYER); // Add particles to bloom layer
         pointsMeshRef.current = newPointsMesh;
         holder.add(newPointsMesh);
       });
@@ -350,11 +474,11 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
     guiPropertiesRef.current = {
       segments: {},
       mesh: "Cube",
-      autoRotate: true,
-      autoRandom: false, // Match GUI settings (unchecked)
+      autoRotate: true, // Auto Rotate checked
+      autoRandom: false, // Auto Randomize unchecked
       rotationSpeed: {
-        x: -0.005, // Match GUI settings
-        y: -0.005, // Match GUI settings
+        x: 0.002, // Speed X from GUI
+        y: 0.004, // Speed Y from GUI
       },
       randomizeSegments: () => {
         createCube();
@@ -397,7 +521,13 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
         // Update the stored original value when GUI changes
         material.userData.originalAmplitude = value;
       });
-    shaderFolder.add(material.uniforms.size, "value", 0, 10).name("Size");
+    shaderFolder
+      .add(material.uniforms.size, "value", 0, 10)
+      .name("Size")
+      .onChange((value) => {
+        // Update the base size for sinusoidal variation
+        material.uniforms.baseSize.value = value;
+      });
     shaderFolder
       .add(material.uniforms.offsetSize, "value", 0, 10)
       .name("Offset Size");
@@ -407,27 +537,63 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
     shaderFolder
       .add(material.uniforms.maxDistance, "value", 0, 5)
       .name("Max Distance");
-    shaderFolder
-      .add(material.uniforms.glowIntensity, "value", 0, 10)
-      .step(0.1)
-      .name("Glow Intensity");
 
-    // Color sampling controls
-    const colorFolder = gui.addFolder("Background Colors");
-    colorFolder
-      .add(colorSamplingRef.current, "enabled")
-      .name("Enable Background Sampling")
+    // Bloom controls - using proxy object for pmndrs/postprocessing compatibility
+    const bloomFolder = gui.addFolder("Bloom");
+
+    // Create proxy object for GUI controls since BloomEffect properties may not be directly accessible
+    const bloomControls = {
+      intensity: 0.6,
+      radius: 5,
+      threshold: 0.6,
+      smoothing: 0.3,
+    };
+
+    bloomFolder
+      .add(bloomControls, "intensity", 0, 3)
+      .step(0.1)
+      .name("Intensity")
       .onChange((value) => {
-        if (!value) {
-          // Reset to white colors
-          material.uniforms.startColor.value.setHex(0xffffff);
-          material.uniforms.endColor.value.setHex(0xcccccc);
+        // Update bloom effect if possible
+        if (bloomEffect.intensity !== undefined) {
+          bloomEffect.intensity = value;
         }
       });
-    colorFolder
-      .add(colorSamplingRef.current, "intensity", 0, 1)
+
+    bloomFolder
+      .add(bloomControls, "radius", 0, 10)
       .step(0.1)
-      .name("Sampling Intensity");
+      .name("Radius")
+      .onChange((value) => {
+        // Update bloom effect if possible
+        if (bloomEffect.radius !== undefined) {
+          bloomEffect.radius = value;
+        }
+      });
+
+    bloomFolder
+      .add(bloomControls, "threshold", 0, 1)
+      .step(0.01)
+      .name("Threshold")
+      .onChange((value) => {
+        // Update bloom effect if possible
+        if (bloomEffect.luminanceThreshold !== undefined) {
+          bloomEffect.luminanceThreshold = value;
+        }
+      });
+
+    bloomFolder
+      .add(bloomControls, "smoothing", 0, 1.0)
+      .step(0.01)
+      .name("Smoothing")
+      .onChange((value) => {
+        // Update bloom effect if possible
+        if (bloomEffect.luminanceSmoothing !== undefined) {
+          bloomEffect.luminanceSmoothing = value;
+        }
+      });
+
+    // Background sampling removed - colors will use default white/gray
 
     gui.close();
 
@@ -438,83 +604,7 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
       }
     }, 3000);
 
-    // Color sampling function
-    const sampleBackgroundColors = () => {
-      if (!colorSamplingRef.current.enabled) return;
-
-      // Find the background video element
-      const videoElement = document.querySelector(
-        'video[src*="main-loop.webm"]'
-      );
-      if (!videoElement || !contextRef.current || !canvasRef.current) return;
-
-      try {
-        // Draw video frame to canvas
-        contextRef.current.drawImage(videoElement, 0, 0, 100, 100);
-
-        // Sample colors from different regions
-        const topColor = contextRef.current.getImageData(50, 20, 1, 1).data; // Top center
-        const bottomColor = contextRef.current.getImageData(50, 80, 1, 1).data; // Bottom center
-
-        // Convert RGB to hex for Three.js
-        const rgbToHex = (r, g, b) => {
-          return (r << 16) | (g << 8) | b;
-        };
-
-        const sampledStartColor = rgbToHex(
-          topColor[0],
-          topColor[1],
-          topColor[2]
-        );
-        const sampledEndColor = rgbToHex(
-          bottomColor[0],
-          bottomColor[1],
-          bottomColor[2]
-        );
-
-        // Apply intensity factor and mix with original white colors
-        const originalStart = 0xffffff;
-        const originalEnd = 0xcccccc;
-        const intensity = colorSamplingRef.current.intensity;
-
-        // Blend sampled colors with original colors
-        const blendColors = (original, sampled, factor) => {
-          const origR = (original >> 16) & 0xff;
-          const origG = (original >> 8) & 0xff;
-          const origB = original & 0xff;
-
-          const sampR = (sampled >> 16) & 0xff;
-          const sampG = (sampled >> 8) & 0xff;
-          const sampB = sampled & 0xff;
-
-          const r = Math.round(origR * (1 - factor) + sampR * factor);
-          const g = Math.round(origG * (1 - factor) + sampG * factor);
-          const b = Math.round(origB * (1 - factor) + sampB * factor);
-
-          return (r << 16) | (g << 8) | b;
-        };
-
-        const finalStartColor = blendColors(
-          originalStart,
-          sampledStartColor,
-          intensity
-        );
-        const finalEndColor = blendColors(
-          originalEnd,
-          sampledEndColor,
-          intensity
-        );
-
-        // Update shader uniforms
-        if (materialRef.current) {
-          materialRef.current.uniforms.startColor.value.setHex(finalStartColor);
-          materialRef.current.uniforms.endColor.value.setHex(finalEndColor);
-        }
-      } catch (error) {
-        // Silently handle CORS or other canvas errors
-        console.warn("Color sampling failed:", error.message);
-      }
-    };
+    // Color sampling function removed - using default colors only
 
     // Create initial cube
     createCube();
@@ -543,19 +633,40 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
             progress < 0.3 ? progress / 0.3 : 1 - (progress - 0.3) / 0.7;
           eventIntensity = fadeInOut;
 
-          // Set colors and rotation boost based on event type
+          // Set colors, rotation boost, and bloom intensity based on event type
           switch (eventAnimationRef.current.type) {
             case "wrong":
               eventColors = { start: 0xff0000, end: 0x800000 }; // Red colors
-              rotationBoostRef.current = eventIntensity * 2; // Much faster rotation (10x boost)
+              rotationBoostRef.current = -0.1; // Stop rotation completely (multiplier becomes 0)
+              // Keep default bloom intensity for wrong answers
+              if (
+                bloomPassRef.current &&
+                bloomPassRef.current.intensity !== undefined
+              ) {
+                bloomPassRef.current.intensity = 0.6; // Default intensity
+              }
               break;
             case "correct":
-              eventColors = { start: 0xffff00, end: 0x808000 }; // Yellow colors
+              eventColors = { start: 0xffe000, end: 0xffe000 }; // Pure gold to orange gradient
               rotationBoostRef.current = eventIntensity * 2; // Much faster rotation (10x boost)
+              // Increase bloom intensity for correct answers (yellow)
+              if (
+                bloomPassRef.current &&
+                bloomPassRef.current.intensity !== undefined
+              ) {
+                bloomPassRef.current.intensity = 3.0; // High intensity for yellow glow
+              }
               break;
             case "pass":
-              // No color effects for pass, but add rotation boost
+              // No color effects for pass, but add rotation boost and bloom intensity
               rotationBoostRef.current = eventIntensity * 2; // Same fast rotation as correct/wrong
+              // Medium bloom intensity for pass events
+              if (
+                bloomPassRef.current &&
+                bloomPassRef.current.intensity !== undefined
+              ) {
+                bloomPassRef.current.intensity = 1.5; // Medium intensity for pass
+              }
               break;
           }
         }
@@ -563,6 +674,18 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
         // No active event - ensure clean reset
         rotationBoostRef.current = 0;
         eventIntensity = 0;
+        // Reset bloom intensity to default when no event is active
+        if (
+          bloomPassRef.current &&
+          bloomPassRef.current.intensity !== undefined
+        ) {
+          bloomPassRef.current.intensity = 0.6; // Default intensity
+        }
+        // Reset maxDistance to original value when no event is active
+        if (materialRef.current) {
+          materialRef.current.uniforms.maxDistance.value =
+            materialRef.current.userData.originalMaxDistance || 0.82;
+        }
       }
 
       // Audio reactive updates (check current playing state)
@@ -581,6 +704,55 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
           if (average > 0) {
             const intensity = average / 255;
 
+            // Random amplitude variation only when sound is playing
+            const now = Date.now();
+            if (
+              now - randomAmplitudeRef.current.lastUpdate >
+              randomAmplitudeRef.current.interval
+            ) {
+              // Generate new target amplitude between 0.25 and 0.5
+              const oldTarget = randomAmplitudeRef.current.targetVariation;
+              const oldIntensity =
+                randomAmplitudeRef.current.targetIntensityVariation;
+
+              randomAmplitudeRef.current.targetVariation =
+                0.25 + Math.random() * 0.25; // Random between 0.25 and 0.5
+              randomAmplitudeRef.current.targetIntensityVariation =
+                1.12 + Math.random() * 0.68; // Random between 1.12 and 1.8
+
+              randomAmplitudeRef.current.lastUpdate = now;
+              // Much more frequent intervals between 0.33-0.8 seconds (50% more often)
+              randomAmplitudeRef.current.interval = 333 + Math.random() * 467;
+
+              // Log amplitude and intensity changes
+              console.log(
+                `Amplitude: ${oldTarget.toFixed(
+                  4
+                )} → ${randomAmplitudeRef.current.targetVariation.toFixed(
+                  4
+                )} | Intensity: ${oldIntensity.toFixed(
+                  4
+                )} → ${randomAmplitudeRef.current.targetIntensityVariation.toFixed(
+                  4
+                )} (next change in ${(
+                  randomAmplitudeRef.current.interval / 1000
+                ).toFixed(1)}s)`
+              );
+            }
+
+            // Smooth interpolation towards target variations
+            randomAmplitudeRef.current.variation = THREE.MathUtils.lerp(
+              randomAmplitudeRef.current.variation,
+              randomAmplitudeRef.current.targetVariation,
+              randomAmplitudeRef.current.lerpSpeed
+            );
+            randomAmplitudeRef.current.intensityVariation =
+              THREE.MathUtils.lerp(
+                randomAmplitudeRef.current.intensityVariation,
+                randomAmplitudeRef.current.targetIntensityVariation,
+                randomAmplitudeRef.current.lerpSpeed
+              );
+
             // Removed lighting code since it doesn't affect background video
             // Add audio reactivity to the current GUI slider values (don't override them)
             const currentAmplitude = material.uniforms.amplitude.value;
@@ -596,95 +768,216 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
             const eventBoost =
               eventAnimationRef.current.type === "pass"
                 ? 0
-                : eventIntensity * 1.5; // Reduced from 2
+                : eventAnimationRef.current.type === "wrong"
+                ? eventIntensity * 3.0 // Much stronger boost for wrong answers
+                : eventIntensity * 1.5; // Normal boost for correct answers
             const eventFreqBoost =
               eventAnimationRef.current.type === "pass"
                 ? 0
-                : eventIntensity * 2; // Reduced from 3
+                : eventAnimationRef.current.type === "wrong"
+                ? eventIntensity * 4.0 // Much stronger frequency boost for wrong answers
+                : eventIntensity * 2; // Normal frequency boost for correct answers
 
-            // Clamp final values to prevent extreme deformation
+            // Use random amplitude value (0.25-0.5) plus audio intensity and event boost
             material.uniforms.amplitude.value = Math.min(
-              material.userData.originalAmplitude +
+              randomAmplitudeRef.current.variation + // Use random amplitude (0.25-0.5)
                 intensity * 0.4 +
-                eventBoost, // Reduced audio multiplier
+                eventBoost,
               0.8 // Maximum amplitude cap
             );
             material.uniforms.frequency.value = Math.min(
-              material.userData.originalFrequency +
+              randomAmplitudeRef.current.intensityVariation + // Use random intensity (1.12-2.8)
                 intensity * 1.2 +
                 eventFreqBoost, // Reduced audio multiplier
               4.0 // Maximum frequency cap
             );
+            // Set maxDistance based on event type
+            material.uniforms.maxDistance.value =
+              eventAnimationRef.current.type === "wrong"
+                ? 0.8 // Lower maxDistance for wrong answers
+                : material.userData.originalMaxDistance;
           } else {
+            // When no sound is playing, smoothly transition to GUI defaults
+            // Set targets to GUI defaults and let lerp handle smooth transition
+            randomAmplitudeRef.current.targetVariation =
+              material.userData.originalAmplitude || 0.25;
+            randomAmplitudeRef.current.targetIntensityVariation =
+              material.userData.originalFrequency || 1.12;
+
+            // Continue smooth interpolation towards GUI defaults (much slower)
+            const slowLerpSpeed = 0.008; // Very slow transition when audio stops
+            randomAmplitudeRef.current.variation = THREE.MathUtils.lerp(
+              randomAmplitudeRef.current.variation,
+              randomAmplitudeRef.current.targetVariation,
+              slowLerpSpeed
+            );
+            randomAmplitudeRef.current.intensityVariation =
+              THREE.MathUtils.lerp(
+                randomAmplitudeRef.current.intensityVariation,
+                randomAmplitudeRef.current.targetIntensityVariation,
+                slowLerpSpeed
+              );
+
             // When no audio, return to GUI slider values with event enhancement only
             if (material.userData.originalAmplitude !== undefined) {
               const eventBoost =
                 eventAnimationRef.current.type === "pass"
                   ? 0
-                  : eventIntensity * 2;
+                  : eventAnimationRef.current.type === "wrong"
+                  ? eventIntensity * 3.0 // Much stronger boost for wrong answers
+                  : eventIntensity * 2; // Normal boost for correct answers
               const eventFreqBoost =
                 eventAnimationRef.current.type === "pass"
                   ? 0
-                  : eventIntensity * 3;
+                  : eventAnimationRef.current.type === "wrong"
+                  ? eventIntensity * 4.0 // Much stronger frequency boost for wrong answers
+                  : eventIntensity * 3; // Normal frequency boost for correct answers
 
               material.uniforms.amplitude.value =
                 material.userData.originalAmplitude + eventBoost;
               material.uniforms.frequency.value =
                 material.userData.originalFrequency + eventFreqBoost;
+              // Set maxDistance based on event type
+              material.uniforms.maxDistance.value =
+                eventAnimationRef.current.type === "wrong"
+                  ? 0.8 // Lower maxDistance for wrong answers
+                  : material.userData.originalMaxDistance;
             }
           }
         } catch (error) {
+          // Smoothly transition to GUI defaults when no audio analysis is available
+          randomAmplitudeRef.current.targetVariation =
+            material.userData.originalAmplitude || 0.25;
+          randomAmplitudeRef.current.targetIntensityVariation =
+            material.userData.originalFrequency || 1.12;
+
+          // Continue smooth interpolation towards GUI defaults (much slower)
+          const slowLerpSpeed = 0.008; // Very slow transition when audio stops
+          randomAmplitudeRef.current.variation = THREE.MathUtils.lerp(
+            randomAmplitudeRef.current.variation,
+            randomAmplitudeRef.current.targetVariation,
+            slowLerpSpeed
+          );
+          randomAmplitudeRef.current.intensityVariation = THREE.MathUtils.lerp(
+            randomAmplitudeRef.current.intensityVariation,
+            randomAmplitudeRef.current.targetIntensityVariation,
+            slowLerpSpeed
+          );
+
           // If audio context isn't ready or available, use GUI values with event enhancement
           if (material.userData.originalAmplitude !== undefined) {
             const eventBoost =
               eventAnimationRef.current.type === "pass"
                 ? 0
-                : eventIntensity * 2;
+                : eventAnimationRef.current.type === "wrong"
+                ? eventIntensity * 3.0 // Much stronger boost for wrong answers
+                : eventIntensity * 2; // Normal boost for correct answers
             const eventFreqBoost =
               eventAnimationRef.current.type === "pass"
                 ? 0
-                : eventIntensity * 3;
+                : eventAnimationRef.current.type === "wrong"
+                ? eventIntensity * 4.0 // Much stronger frequency boost for wrong answers
+                : eventIntensity * 3; // Normal frequency boost for correct answers
 
             material.uniforms.amplitude.value =
               material.userData.originalAmplitude + eventBoost;
             material.uniforms.frequency.value =
               material.userData.originalFrequency + eventFreqBoost;
+            // Set maxDistance based on event type
+            material.uniforms.maxDistance.value =
+              eventAnimationRef.current.type === "wrong"
+                ? 0.8 // Lower maxDistance for wrong answers
+                : material.userData.originalMaxDistance;
           } else {
             // Fallback to default values
             const eventBoost =
               eventAnimationRef.current.type === "pass"
                 ? 0
-                : eventIntensity * 2;
+                : eventAnimationRef.current.type === "wrong"
+                ? eventIntensity * 3.0 // Much stronger boost for wrong answers
+                : eventIntensity * 2; // Normal boost for correct answers
             const eventFreqBoost =
               eventAnimationRef.current.type === "pass"
                 ? 0
-                : eventIntensity * 3;
+                : eventAnimationRef.current.type === "wrong"
+                ? eventIntensity * 4.0 // Much stronger frequency boost for wrong answers
+                : eventIntensity * 3; // Normal frequency boost for correct answers
 
-            material.uniforms.amplitude.value = 0.2 + eventBoost;
-            material.uniforms.frequency.value = 4 + eventFreqBoost; // Updated default
+            material.uniforms.amplitude.value = 0.25 + eventBoost; // Match GUI default
+            material.uniforms.frequency.value = 1.12 + eventFreqBoost; // Match GUI default
+            // Set maxDistance based on event type
+            material.uniforms.maxDistance.value =
+              eventAnimationRef.current.type === "wrong"
+                ? 0.8 // Lower maxDistance for wrong answers
+                : 0.82; // Default maxDistance
           }
         }
       } else {
+        // Smoothly transition to GUI defaults when no analyser is available
+        randomAmplitudeRef.current.targetVariation =
+          materialRef.current?.userData.originalAmplitude || 0.25;
+        randomAmplitudeRef.current.targetIntensityVariation =
+          materialRef.current?.userData.originalFrequency || 1.12;
+
+        // Continue smooth interpolation towards GUI defaults (much slower)
+        const slowLerpSpeed = 0.008; // Very slow transition when audio stops
+        randomAmplitudeRef.current.variation = THREE.MathUtils.lerp(
+          randomAmplitudeRef.current.variation,
+          randomAmplitudeRef.current.targetVariation,
+          slowLerpSpeed
+        );
+        randomAmplitudeRef.current.intensityVariation = THREE.MathUtils.lerp(
+          randomAmplitudeRef.current.intensityVariation,
+          randomAmplitudeRef.current.targetIntensityVariation,
+          slowLerpSpeed
+        );
+
         // Fallback animation when no analyser - use GUI values with event enhancement
         if (material.userData.originalAmplitude !== undefined) {
           const eventBoost =
-            eventAnimationRef.current.type === "pass" ? 0 : eventIntensity * 2;
+            eventAnimationRef.current.type === "pass"
+              ? 0
+              : eventAnimationRef.current.type === "wrong"
+              ? eventIntensity * 3.0 // Much stronger boost for wrong answers
+              : eventIntensity * 2; // Normal boost for correct answers
           const eventFreqBoost =
-            eventAnimationRef.current.type === "pass" ? 0 : eventIntensity * 3;
+            eventAnimationRef.current.type === "pass"
+              ? 0
+              : eventAnimationRef.current.type === "wrong"
+              ? eventIntensity * 4.0 // Much stronger frequency boost for wrong answers
+              : eventIntensity * 3; // Normal frequency boost for correct answers
 
           material.uniforms.amplitude.value =
             material.userData.originalAmplitude + eventBoost;
           material.uniforms.frequency.value =
             material.userData.originalFrequency + eventFreqBoost;
+          // Set maxDistance based on event type
+          material.uniforms.maxDistance.value =
+            eventAnimationRef.current.type === "wrong"
+              ? 0.4 // Lower maxDistance for wrong answers
+              : material.userData.originalMaxDistance;
         } else {
           // Fallback to default values
           const eventBoost =
-            eventAnimationRef.current.type === "pass" ? 0 : eventIntensity * 2;
+            eventAnimationRef.current.type === "pass"
+              ? 0
+              : eventAnimationRef.current.type === "wrong"
+              ? eventIntensity * 3.0 // Much stronger boost for wrong answers
+              : eventIntensity * 2; // Normal boost for correct answers
           const eventFreqBoost =
-            eventAnimationRef.current.type === "pass" ? 0 : eventIntensity * 3;
+            eventAnimationRef.current.type === "pass"
+              ? 0
+              : eventAnimationRef.current.type === "wrong"
+              ? eventIntensity * 4.0 // Much stronger frequency boost for wrong answers
+              : eventIntensity * 3; // Normal frequency boost for correct answers
 
-          material.uniforms.amplitude.value = 0.2 + eventBoost;
-          material.uniforms.frequency.value = 4 + eventFreqBoost; // Updated default
+          material.uniforms.amplitude.value = 0.25 + eventBoost; // Match GUI default
+          material.uniforms.frequency.value = 1.36 + eventFreqBoost; // Match GUI default
+          // Set maxDistance based on event type
+          material.uniforms.maxDistance.value =
+            eventAnimationRef.current.type === "wrong"
+              ? 0.4 // Lower maxDistance for wrong answers
+              : 1.15; // Default maxDistance
         }
       }
 
@@ -707,10 +1000,7 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
         holder.rotation.y = holder.rotation.y % (Math.PI * 2);
       }
 
-      // Sample background colors (every few frames for performance)
-      if (timeRef.current % 0.5 < 0.1) {
-        sampleBackgroundColors();
-      }
+      // Background sampling removed - using default colors only
 
       // Apply event colors if active and not a pass event, otherwise use default colors
       if (
@@ -734,22 +1024,34 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
         material.uniforms.endColor.value.lerp(targetEnd, eventIntensity * 0.8);
 
         // Removed lighting code since it doesn't affect background video
-      } else if (!colorSamplingRef.current.enabled) {
-        // Return to default white colors when no event is active and no background sampling
+      } else {
+        // Return to default white colors when no event is active
         const defaultStart = new THREE.Color(0xffffff);
         const defaultEnd = new THREE.Color(0xcccccc);
         material.uniforms.startColor.value.lerp(defaultStart, 0.1);
         material.uniforms.endColor.value.lerp(defaultEnd, 0.1);
+      }
 
-        // Removed lighting code since it doesn't affect background video
+      // Update video texture for smooth playback
+      if (
+        videoTexture &&
+        videoElement &&
+        videoElement.readyState >= videoElement.HAVE_CURRENT_DATA
+      ) {
+        videoTexture.needsUpdate = true;
       }
 
       // Update time (always continue)
       timeRef.current += 0.1;
       material.uniforms.time.value = timeRef.current;
 
-      // Render (always continue)
-      renderer.render(scene, camera);
+      // Apply sinusoidal size variation (±0.5 of current value)
+      const baseSize = material.uniforms.baseSize.value;
+      const sizeVariation = Math.sin(timeRef.current * 0.125) * 0.5;
+      material.uniforms.size.value = baseSize + baseSize * sizeVariation;
+
+      // Render with bloom post-processing (always continue)
+      composer.render();
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -774,7 +1076,19 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
       if (material) {
         material.dispose();
       }
-      // Removed lighting cleanup since we removed the lighting system
+      if (composerRef.current) {
+        composerRef.current.dispose();
+      }
+
+      // Clean up video element
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.src = "";
+        videoElement.load();
+      }
+      if (videoTexture) {
+        videoTexture.dispose();
+      }
       if (renderer && mountRef.current) {
         mountRef.current.removeChild(renderer.domElement);
         renderer.dispose();
@@ -819,7 +1133,7 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
       eventAnimationRef.current = {
         isActive: true,
         startTime: Date.now(),
-        duration: soundEvent.type === "wrong" ? 1500 : 1000, // Longer duration for wrong
+        duration: soundEvent.type === "wrong" ? 750 : 1000, // 50% shorter duration for wrong
         type: soundEvent.type,
       };
 

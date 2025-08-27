@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useRef } from "react";
 
-const BackgroundVideo = () => {
+const BackgroundVideo = ({
+  src = "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/assets/video/main-loop.webm",
+}) => {
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -14,7 +16,7 @@ const BackgroundVideo = () => {
     <video
       ref={videoRef}
       className="absolute w-[1080px] h-[1080px] object-cover"
-      src="https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/assets/video/main-loop.webm"
+      src={src}
       muted
       loop
       playsInline

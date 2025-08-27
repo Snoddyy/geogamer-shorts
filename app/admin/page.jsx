@@ -94,7 +94,11 @@ const AdminPage = () => {
       } else if (event.key === "e" || event.key === "E") {
         handleCorrect();
       } else if (event.key === "s" || event.key === "S") {
-        handleStopSound();
+        handleToggleSound();
+      } else if (event.key === "&") {
+        handleDisplayRules();
+      } else if (event.key === "é") {
+        handleStartGame();
       }
     };
 
@@ -104,7 +108,14 @@ const AdminPage = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [handleCorrect, handleFalse, handlePass, handleStopSound]);
+  }, [
+    handleCorrect,
+    handleFalse,
+    handlePass,
+    handleToggleSound,
+    handleDisplayRules,
+    handleStartGame,
+  ]);
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -124,7 +135,7 @@ const AdminPage = () => {
           <h3 className="text-sm font-semibold text-card-foreground mb-2 uppercase tracking-wide">
             Keyboard Shortcuts
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
             <div className="flex items-center gap-2">
               <kbd className="px-2 py-1 bg-muted text-muted-foreground rounded text-xs font-mono">
                 E
@@ -147,7 +158,19 @@ const AdminPage = () => {
               <kbd className="px-2 py-1 bg-muted text-muted-foreground rounded text-xs font-mono">
                 S
               </kbd>
-              <span className="text-muted-foreground">Stop Sound</span>
+              <span className="text-muted-foreground">Toggle Sound</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="px-2 py-1 bg-muted text-muted-foreground rounded text-xs font-mono">
+                &
+              </kbd>
+              <span className="text-muted-foreground">Display Rules</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="px-2 py-1 bg-muted text-muted-foreground rounded text-xs font-mono">
+                é
+              </kbd>
+              <span className="text-muted-foreground">Start Game</span>
             </div>
           </div>
         </div>

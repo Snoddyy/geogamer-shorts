@@ -87,6 +87,12 @@ const SoundPlayer = () => {
 
   const [timerKey] = useState("persistent-sound-timer");
 
+  useEffect(() => {
+    if (gameAudioRef.current) {
+      gameAudioRef.current.volume = 0.1;
+    }
+  }, []);
+
   // Helper function to trigger sound events for the visualizer
   const triggerSoundEvent = useCallback((eventType) => {
     const eventId = Date.now(); // Unique ID to ensure the effect triggers
@@ -199,17 +205,6 @@ const SoundPlayer = () => {
 
   // 🔊 Safe sound playback
   useEffect(() => {
-    console.log("Sound playback useEffect triggered:", {
-      gameStarted,
-      currentIndex,
-      hasSound: !!selectedPlaylist[currentIndex],
-      isManuallyPaused,
-      isAudioPlaying,
-      playLockRef: playLockRef.current,
-      currentSession: currentSoundSessionRef.current,
-      isTransitioning: isTransitioningRef.current,
-    });
-
     // Don't start audio if it's already playing, manually paused, or transitioning
     if (
       gameStarted &&
@@ -505,7 +500,6 @@ const SoundPlayer = () => {
           crossOrigin="anonymous"
           preload="auto"
           loop={false}
-          volume={0.2}
           onEnded={handleAudioEnded}
           onPause={handleAudioPause}
           onPlay={handleAudioPlay}
@@ -519,7 +513,6 @@ const SoundPlayer = () => {
         {gameStarted && (
           <>
             <div className="relative w-full h-screen">
-              <BackgroundVideo />
               <AudioVisualizer
                 audioRef={gameAudioRef}
                 isPlaying={isAudioPlaying}

@@ -88,7 +88,7 @@ export const images = [
     id: 7,
     name: "CSGO Map",
     videoUrl:
-      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/e10/map_fps.webm",
+      "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/assets/videos/rules_cs.webm",
     images: [
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/11_maps_fps_1/1-1.webp",
       "https://red-bull-checkpoint.s3.eu-west-3.amazonaws.com/geogamer-shorts/e10/11_maps_fps_1/1-2.webp",

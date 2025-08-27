@@ -81,23 +81,28 @@ const ImagePlayer = () => {
   const [videoUrl, setVideoUrl] = useState(initialVideoUrl);
 
   const [playTimerStart] = useSound(
-    soundDesign.find((sound) => sound.id === "timerStart").url
+    soundDesign.find((sound) => sound.id === "timerStart").url,
+    { volume: 0.2 }
   );
   const [playAmbiance, { stop: stopAmbiance }] = useSound(
     soundDesign.find((sound) => sound.id === "ambiance").url,
-    { loop: true }
+    { loop: true, volume: 0.2 }
   );
   const [playPass] = useSound(
-    soundDesign.find((sound) => sound.id === "pass").url
+    soundDesign.find((sound) => sound.id === "pass").url,
+    { volume: 0.2 }
   );
   const [playCorrect] = useSound(
-    soundDesign.find((sound) => sound.id === "correct").url
+    soundDesign.find((sound) => sound.id === "correct").url,
+    { volume: 0.2 }
   );
   const [playRules] = useSound(
-    soundDesign.find((sound) => sound.id === "rules").url
+    soundDesign.find((sound) => sound.id === "rules").url,
+    { volume: 0.2 }
   );
   const [playWrong] = useSound(
-    soundDesign.find((sound) => sound.id === "wrong").url
+    soundDesign.find((sound) => sound.id === "wrong").url,
+    { volume: 0.2 }
   );
 
   const [currentIndex, setCurrentIndex] = useState(0);

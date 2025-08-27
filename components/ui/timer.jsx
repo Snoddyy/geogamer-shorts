@@ -265,7 +265,7 @@ const Timer = ({ duration, roundHistory, onTimerEnd }) => {
             "playWarning returned undefined, trying HTML5 audio fallback"
           );
           const audio = new Audio(warningUrl);
-          audio.volume = 1.0;
+          audio.volume = 0.2;
           audio
             .play()
             .then(() => console.log("HTML5 audio fallback played successfully"))

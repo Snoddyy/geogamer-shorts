@@ -2,7 +2,7 @@
 
 const HistoryBar = ({ totalRounds, roundHistory, currentRoundId }) => {
   return (
-    <div className="fixed z-50 flex items-center justify-center py-2 text-white top-10 left-1/2 -translate-x-1/2 bg-black/50">
+    <div className="fixed z-50 flex items-center justify-center py-2 text-white top-10 left-1/2 -translate-x-1/2 bg-black/50 select-none pointer-events-none">
       {Array.from({ length: totalRounds }, (_, index) => (
         <div
           key={index}
