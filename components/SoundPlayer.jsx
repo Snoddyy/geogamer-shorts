@@ -489,7 +489,7 @@ const SoundPlayer = () => {
       {gameStarted && (
         <Timer
           key={timerKey}
-          duration={999}
+          duration={60}
           roundHistory={roundHistory}
           onTimerEnd={handleTimerEnd}
         />
