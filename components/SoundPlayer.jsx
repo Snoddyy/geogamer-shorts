@@ -25,6 +25,7 @@ const SoundPlayer = () => {
   const shouldBePlayingRef = useRef(false); // track if audio should be playing
   const currentSoundSessionRef = useRef(""); // track which sound session is active
   const isTransitioningRef = useRef(false); // track if we're transitioning between sounds
+  const roundHistoryRef = useRef([]); // ref to hold current roundHistory for timer callback
 
   // Find the video URL for rules based on selected playlist
   const initialVideoUrl = (() => {
@@ -71,9 +72,12 @@ const SoundPlayer = () => {
 
   // Game state
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [roundHistory, setRoundHistory] = useState(
-    Array(selectedPlaylist.length).fill(0)
-  );
+  const [roundHistory, setRoundHistory] = useState(() => {
+    const initialHistory = Array(selectedPlaylist.length).fill(0);
+    console.log("SoundPlayer - Initializing roundHistory:", initialHistory);
+    console.log("SoundPlayer - Playlist length:", selectedPlaylist.length);
+    return initialHistory;
+  });
   const [showRulesVideo, setShowRulesVideo] = useState(true);
   const [showBlendedVideo, setShowBlendedVideo] = useState(false);
   const [showTimerStartVideo, setShowTimerStartVideo] = useState(false);
@@ -105,20 +109,46 @@ const SoundPlayer = () => {
   }, []);
 
   const handleTimerEnd = useCallback(() => {
+    console.log("=== TIMER END CALLBACK TRIGGERED ===");
+    console.log("SoundPlayer - Timer ended. State roundHistory:", roundHistory);
+    console.log(
+      "SoundPlayer - Timer ended. Ref roundHistory:",
+      roundHistoryRef.current
+    );
+    console.log(
+      "SoundPlayer - RoundHistory values breakdown (state):",
+      roundHistory.map((val, idx) => `[${idx}]: ${val}`)
+    );
+    console.log(
+      "SoundPlayer - RoundHistory values breakdown (ref):",
+      roundHistoryRef.current.map((val, idx) => `[${idx}]: ${val}`)
+    );
+    console.log("SoundPlayer - Expected index at timer end:", expectedIndex);
+    console.log("SoundPlayer - Current index at timer end:", currentIndex);
+    console.log("SoundPlayer - Game started:", gameStarted);
+
     if (gameAudioRef.current) {
       gameAudioRef.current.pause();
       setIsAudioPlaying(false);
     }
-    const score = roundHistory.filter((value) => value === 1).length;
-    console.log("SoundPlayer - Timer ended. RoundHistory:", roundHistory);
+
+    // Use ref instead of state to get current roundHistory
+    const currentRoundHistory = roundHistoryRef.current;
+    const score = currentRoundHistory.filter((value) => value === 1).length;
     console.log(
-      "SoundPlayer - Calculated score:",
+      "SoundPlayer - Calculated score from ref:",
       score,
       "out of",
       selectedPlaylist.length
     );
+    console.log(
+      "SoundPlayer - Navigating to score page with URL:",
+      `/score?score=${score}&total=${selectedPlaylist.length}`
+    );
+    console.log("=== END TIMER CALLBACK ===");
+
     router.push(`/score?score=${score}&total=${selectedPlaylist.length}`);
-  }, [roundHistory, selectedPlaylist.length, router]);
+  }, [selectedPlaylist.length, router]);
 
   const stopCurrentTrack = useCallback(() => {
     if (gameAudioRef.current) {
@@ -170,6 +200,10 @@ const SoundPlayer = () => {
       if (newHistory[expectedIndex] === 0) {
         newHistory[expectedIndex] = 1;
         console.log("SoundPlayer - Updated history:", newHistory);
+        console.log(
+          "SoundPlayer - Current score after update:",
+          newHistory.filter((value) => value === 1).length
+        );
         setExpectedIndex((prevExpectedIndex) => {
           const nextIndex = (prevExpectedIndex + 1) % selectedPlaylist.length;
           return nextIndex;
@@ -191,6 +225,21 @@ const SoundPlayer = () => {
     });
   }, [expectedIndex, selectedPlaylist.length]);
 
+  // Track roundHistory changes for debugging and update ref
+  useEffect(() => {
+    console.log("SoundPlayer - RoundHistory state changed:", roundHistory);
+    console.log(
+      "SoundPlayer - Current score:",
+      roundHistory.filter((value) => value === 1).length
+    );
+    console.log(
+      "SoundPlayer - Total playlist length:",
+      selectedPlaylist.length
+    );
+    // Update ref to hold current roundHistory for timer callback
+    roundHistoryRef.current = roundHistory;
+  }, [roundHistory, selectedPlaylist.length]);
+
   useEffect(() => {
     const allSoundsFound = roundHistory.every((value) => value === 1);
     if (allSoundsFound && gameStarted) {
@@ -199,6 +248,7 @@ const SoundPlayer = () => {
         setIsAudioPlaying(false);
       }
       const score = roundHistory.filter((value) => value === 1).length;
+      console.log("SoundPlayer - All sounds found! Final score:", score);
       router.push(`/score?score=${score}&total=${selectedPlaylist.length}`);
     }
   }, [roundHistory, router, gameStarted, selectedPlaylist.length]);

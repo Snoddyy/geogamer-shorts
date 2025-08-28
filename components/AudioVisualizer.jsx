@@ -647,7 +647,7 @@ const AudioVisualizer = ({ audioRef, isPlaying, soundEvent = null }) => {
               }
               break;
             case "correct":
-              eventColors = { start: 0xffe000, end: 0xffe000 }; // Pure gold to orange gradient
+              eventColors = { start: 0xff7400, end: 0xff7400 }; // Pure gold to orange gradient
               rotationBoostRef.current = eventIntensity * 2; // Much faster rotation (10x boost)
               // Increase bloom intensity for correct answers (yellow)
               if (
